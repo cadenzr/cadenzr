@@ -45,7 +45,7 @@
             methods: {
               loadAlbums: function(){
                   self = this
-                  $.getJSON( "http://localhost:8080/albums", function(data) {
+                  $.getJSON( "/albums", function(data) {
                         self.albums = data;
                         self.albums.forEach(function(album) {
                             console.log(album.id);
@@ -74,7 +74,7 @@
               loadSongs: function(){
                   self = this
                   console.log(self.route);
-                  $.getJSON( "http://localhost:8080/albums/" + self.$route.params.id + "/songs", function(data) {
+                  $.getJSON( "/albums/" + self.$route.params.id + "/songs", function(data) {
                       self.songs = data;
                   });
               }
