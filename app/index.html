@@ -60,23 +60,43 @@
         
         const AudioPlayer = Vue.component('audio-player', {
             template:
-                `<p>
-                    <audio ref="audioplayer" controls>
-                      <source :src="song_stream" type="audio/mpeg">
-                      Your browser does not support the audio tag.
+                `<div>
+                    <button v-on:click="prev">Previous</button>
+                    <audio ref="audioplayer" v-on:ended="next" controls>
+                        <source :src="song_stream" type="audio/mpeg">
+                        Your browser does not support the audio tag.
                     </audio>
-                </p>`,
+                    <button v-on:click="next">Next</button>
+                    <p>
+                        <b>Now playing:</b> <span v-if="index >= 0">{{songs[index].name}}</span>
+                    </p>
+                </div>`,
             data: function () {
                 return {
-                    song_stream: ""
+                    song_stream: "",
+                    index: -1,
+                    songs: [],
                 }
             },
             mounted: function () {
-                this.$watch('song_stream', function () {
-                  this.$refs.audioplayer.load()
-                  this.$refs.audioplayer.play()
+                this.$watch('index', function () {
+                    this.song_stream = this.songs[this.index].stream_location;
+                    this.$refs.audioplayer.load()
+                    this.$refs.audioplayer.play()
               })
             },
+            methods: {
+                play: function(songs, index) {
+                    this.songs = songs;
+                    this.index = index;
+                },
+                next: function() {
+                    this.index = (this.index + 1) % this.songs.length;
+                },
+                prev: function() {
+                    this.index = (((this.index - 1) % this.songs.length) + this.songs.length) % this.songs.length; // shitty module since JS doesn't like mod of negative numbers
+                }
+            }
         })
 
 
@@ -96,15 +116,20 @@
             methods: {
               loadSongs: function(){
                   self = this
-                  console.log(self.route);
                   $.getJSON( "./albums/" + self.$route.params.id + "/songs", function(data) {
                       self.songs = data;
+                      var count = 0;
+                      self.songs.forEach(function(song) {
+                          song.index = count;
+                          count++;
+                      })
                   });
               },
               play: function(song){
                   self = this;
                   console.log(song.stream_location);
-                  app.$refs.player.song_stream = song.stream_location;
+                  //app.$refs.player.song_stream = song.stream_location;
+                  app.$refs.player.play(self.songs, song.index);
               }
             }
         });
