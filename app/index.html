@@ -18,33 +18,82 @@
 <body>
     
     <div id="app">
-        <h2>{{ title }}</h2>
-      
-        <ul>
-          <li v-for="album in albums">{{album.name}}</li>
-        </ul>
+        
+        <router-view></router-view>
     </div>
     
-    
     <script>
-        var app = new Vue({
-          el: '#app',
-          data: {
-            title: "Albums",
-            albums: []
-          },
-          mounted () {
-              this.loadAlbums();
-          },
-          methods: {
-            loadAlbums: function(){
-                self = this
-                $.getJSON( "http://localhost:8080/albums", function(data) {
-                    self.albums = data;
-                });
+        
+        // Albums component: renders a list of all albums
+        const Albums = Vue.component('albums', {
+            template:
+                `<ul>
+                    <li v-for="album in albums">
+                        <router-link :to="{ path: album.link }">
+                            {{album.name}}
+                        </router-link>
+                    </li>
+                </ul>`,
+            data: function () {
+                return {
+                    albums: []
+                }
+            },
+            mounted () {
+                this.loadAlbums();
+            },
+            methods: {
+              loadAlbums: function(){
+                  self = this
+                  $.getJSON( "http://localhost:8080/albums", function(data) {
+                        self.albums = data;
+                        self.albums.forEach(function(album) {
+                            console.log(album.id);
+                            album.link = "albums/" + album.id;
+                        });
+                  });
+              }
             }
-          }
+        });
+        
+        
+        const Album = Vue.component('album', {
+            template:
+                `<ul>
+                    <li v-for="song in songs">{{song.name}}</li>
+                </ul>`,
+            data: function () {
+                return {
+                    songs: []
+                }
+            },
+            mounted () {
+                this.loadSongs();
+            },
+            methods: {
+              loadSongs: function(){
+                  self = this
+                  console.log(self.route);
+                  $.getJSON( "http://localhost:8080/albums/" + self.$route.params.id + "/songs", function(data) {
+                      self.songs = data;
+                  });
+              }
+            }
+        });
+        
+        const routes = [
+          { path: '/', component: Albums },
+          { path: '/albums', component: Albums },
+          { path: '/albums/:id', component: Album }
+        ]
+        
+        const router = new VueRouter({
+          routes // short for routes: routes
         })
+        
+        var app = new Vue({
+          router
+        }).$mount('#app')
     </script>
     
 </body>
