@@ -19,9 +19,9 @@
 <body>
 
     <div id="app">
-        
+
         <audio-player ref="player"></audio-player>
-        
+
         <router-view></router-view>
     </div>
 
@@ -58,7 +58,7 @@
               }
             }
         });
-        
+
         const AudioPlayer = Vue.component('audio-player', {
             template:
                 `<div class="audio-player">
@@ -78,6 +78,7 @@
                         <source :src="song_stream" type="audio/mpeg">
                         Your browser does not support the audio tag.
                     </audio>
+                    <input type="range" v-model="volume" min="0" max="100">
                     <p>
                        <span v-if="index >= 0">{{songs[index].name}}</span>
                     </p>
@@ -88,6 +89,7 @@
                     index: -1,
                     songs: [],
                     playing: false,
+                    volume: 20,
                 }
             },
             mounted: function () {
@@ -95,7 +97,11 @@
                     this.song_stream = this.songs[this.index].stream_location;
                     this.$refs.audioplayer.load()
                     this.play()
-              })
+                });
+
+              this.$watch('volume', function () {
+                  this.$refs.audioplayer.volume = this.volume / 100;
+              });
             },
             methods: {
                 playSong: function(songs, index) {
