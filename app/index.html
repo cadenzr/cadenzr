@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>Cadenzr</title>
+    
+    <script src="jquery-3.1.1.min.js"></script>
+    <script src="vue.js"></script>
+    <script src="vue-router.js"></script>
+    
+    <!--<link href="style.css" rel="stylesheet" type="text/css">-->
+    
+    
+    
+</head>
+<body>
+    
+    <div id="app">
+        <h2>{{ title }}</h2>
+      
+        <ul>
+          <li v-for="album in albums">{{album.name}}</li>
+        </ul>
+    </div>
+    
+    
+    <script>
+        var app = new Vue({
+          el: '#app',
+          data: {
+            title: "Albums",
+            albums: []
+          },
+          mounted () {
+              this.loadAlbums();
+          },
+          methods: {
+            loadAlbums: function(){
+                self = this
+                $.getJSON( "http://localhost:8080/albums", function(data) {
+                    self.albums = data;
+                });
+            }
+          }
+        })
+    </script>
+    
+</body>
+</html>
