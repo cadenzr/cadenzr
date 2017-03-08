@@ -193,11 +193,20 @@ func parseUint32(str string, fallback uint32) uint32 {
 	return uint32(n)
 }
 
+func corsHeader(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		c.Response().Header().Set("Access-Control-Allow-Origin", "*")
+		return next(c)
+	}
+}
+
 func main() {
 	backend := NewBackend()
 	backend.Start()
 
 	e := echo.New()
+	e.Use(corsHeader)
+
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
