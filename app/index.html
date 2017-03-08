@@ -18,7 +18,9 @@
 <body>
 
     <div id="app">
-
+        
+        <audio-player ref="player"></audio-player>
+        
         <router-view></router-view>
     </div>
 
@@ -45,7 +47,7 @@
             methods: {
               loadAlbums: function(){
                   self = this
-                  $.getJSON( "/albums", function(data) {
+                  $.getJSON( "./albums", function(data) {
                         self.albums = data;
                         self.albums.forEach(function(album) {
                             console.log(album.id);
@@ -55,12 +57,33 @@
               }
             }
         });
+        
+        const AudioPlayer = Vue.component('audio-player', {
+            template:
+                `<p>
+                    <audio ref="audioplayer" controls>
+                      <source :src="song_stream" type="audio/mpeg">
+                      Your browser does not support the audio tag.
+                    </audio>
+                </p>`,
+            data: function () {
+                return {
+                    song_stream: ""
+                }
+            },
+            mounted: function () {
+                this.$watch('song_stream', function () {
+                  this.$refs.audioplayer.load()
+                  this.$refs.audioplayer.play()
+              })
+            },
+        })
 
 
         const Album = Vue.component('album', {
             template:
                 `<ul>
-                    <li v-for="song in songs"><a :href="song.stream_location">{{song.name}}</a></li>
+                    <li v-for="song in songs"><a v-on:click="play(song)">{{song.name}}</a></li>
                 </ul>`,
             data: function () {
                 return {
@@ -74,9 +97,14 @@
               loadSongs: function(){
                   self = this
                   console.log(self.route);
-                  $.getJSON( "/albums/" + self.$route.params.id + "/songs", function(data) {
+                  $.getJSON( "./albums/" + self.$route.params.id + "/songs", function(data) {
                       self.songs = data;
                   });
+              },
+              play: function(song){
+                  self = this;
+                  console.log(song.stream_location);
+                  app.$refs.player.song_stream = song.stream_location;
               }
             }
         });
