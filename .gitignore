@@ -1,2 +1,4 @@
 .DS_Store
 Cadenzr
+app/.sass-cache/
+app/style.css.map
