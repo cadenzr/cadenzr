@@ -17,10 +17,11 @@ import (
 type Song struct {
 	lock sync.RWMutex
 
-	Id   uint32 `json:"id"`
-	Name string `json:"name"`
-	Mime string `json:"mime"`
-	Path string `json:"-"`
+	Id             uint32 `json:"id"`
+	Name           string `json:"name"`
+	Mime           string `json:"mime"`
+	Path           string `json:"-"`
+	StreamLocation string `json:"stream_location"`
 }
 
 type Album struct {
@@ -92,10 +93,11 @@ func (b *Backend) scanFilesystem() {
 		if i == -1 {
 			// No seperator -> Song in root directory -> No album.
 			s := &Song{
-				Id:   b.nextSongId,
-				Name: path,
-				Mime: mimeType,
-				Path: "",
+				Id:             b.nextSongId,
+				Name:           path,
+				Mime:           mimeType,
+				Path:           "",
+				StreamLocation: "http://127.0.0.1:8080/stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 			}
 			b.nextSongId++
 			b.songs[s.Id] = s
@@ -119,10 +121,11 @@ func (b *Backend) scanFilesystem() {
 			}
 
 			s := &Song{
-				Id:   b.nextSongId,
-				Name: file,
-				Mime: mimeType,
-				Path: path,
+				Id:             b.nextSongId,
+				Name:           file,
+				Mime:           mimeType,
+				Path:           path,
+				StreamLocation: "http://127.0.0.1:8080/stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 			}
 			b.nextSongId++
 			b.songs[s.Id] = s
@@ -245,5 +248,5 @@ func main() {
 		return c.File(filepath.Join(backend.path, song.Path))
 	})
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start("127.0.0.1:8080"))
 }

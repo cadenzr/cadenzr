@@ -3,27 +3,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+
     <title>Cadenzr</title>
-    
+
     <script src="jquery-3.1.1.min.js"></script>
     <script src="vue.js"></script>
     <script src="vue-router.js"></script>
-    
+
     <!--<link href="style.css" rel="stylesheet" type="text/css">-->
-    
-    
-    
+
+
+
 </head>
 <body>
-    
+
     <div id="app">
-        
+
         <router-view></router-view>
     </div>
-    
+
     <script>
-        
+
         // Albums component: renders a list of all albums
         const Albums = Vue.component('albums', {
             template:
@@ -55,12 +55,12 @@
               }
             }
         });
-        
-        
+
+
         const Album = Vue.component('album', {
             template:
                 `<ul>
-                    <li v-for="song in songs">{{song.name}}</li>
+                    <li v-for="song in songs"><a :href="song.stream_location">{{song.name}}</a></li>
                 </ul>`,
             data: function () {
                 return {
@@ -80,21 +80,21 @@
               }
             }
         });
-        
+
         const routes = [
           { path: '/', component: Albums },
           { path: '/albums', component: Albums },
           { path: '/albums/:id', component: Album }
         ]
-        
+
         const router = new VueRouter({
           routes // short for routes: routes
         })
-        
+
         var app = new Vue({
           router
         }).$mount('#app')
     </script>
-    
+
 </body>
 </html>
