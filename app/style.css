@@ -1,0 +1,44 @@
+body {
+  font-family: sans-serif;
+  font-weight: 300;
+  font-size: 18px;
+  color: #070707; }
+
+li {
+  margin-top: 0.5em; }
+
+.audio-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 25px;
+  background-color: #EFEFEF; }
+  .audio-player audio {
+    display: none; }
+  .audio-player a {
+    font-size: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 1px #05A8AA solid;
+    color: #05A8AA;
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    line-height: 50px; }
+    .audio-player a.play, .audio-player a.pause {
+      width: 67.5px;
+      height: 67.5px;
+      line-height: 67.5px; }
+  .audio-player p {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 33.75px;
+    font-size: 20px;
+    font-family: sans-serif;
+    font-weight: 300;
+    color: #05A8AA; }
+
+/*# sourceMappingURL=style.css.map */

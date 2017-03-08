@@ -10,7 +10,8 @@
     <script src="app/vue.js"></script>
     <script src="app/vue-router.js"></script>
 
-    <!--<link href="style.css" rel="stylesheet" type="text/css">-->
+    <link rel="stylesheet" href="app/font-awesome/css/font-awesome.min.css">
+    <link href="app/style.css" rel="stylesheet" type="text/css">
 
 
 
@@ -60,15 +61,25 @@
         
         const AudioPlayer = Vue.component('audio-player', {
             template:
-                `<div>
-                    <button v-on:click="prev">Previous</button>
+                `<div class="audio-player">
+                    <a class="prev" v-on:click="prev">
+                        <span class="fa fa-step-backward"></span>
+                    </a>
+                    <a class="play"  v-on:click="play" v-if="!playing">
+                        <span class="fa fa-play"></span>
+                    </a>
+                    <a class="pause"  v-on:click="pause" v-if="playing">
+                        <span class="fa fa-pause"></span>
+                    </a>
+                    <a class="next"  v-on:click="next">
+                        <span class="fa fa-step-forward"></span>
+                    </a>
                     <audio ref="audioplayer" v-on:ended="next" controls>
                         <source :src="song_stream" type="audio/mpeg">
                         Your browser does not support the audio tag.
                     </audio>
-                    <button v-on:click="next">Next</button>
                     <p>
-                        <b>Now playing:</b> <span v-if="index >= 0">{{songs[index].name}}</span>
+                       <span v-if="index >= 0">{{songs[index].name}}</span>
                     </p>
                 </div>`,
             data: function () {
@@ -76,17 +87,18 @@
                     song_stream: "",
                     index: -1,
                     songs: [],
+                    playing: false,
                 }
             },
             mounted: function () {
                 this.$watch('index', function () {
                     this.song_stream = this.songs[this.index].stream_location;
                     this.$refs.audioplayer.load()
-                    this.$refs.audioplayer.play()
+                    this.play()
               })
             },
             methods: {
-                play: function(songs, index) {
+                playSong: function(songs, index) {
                     this.songs = songs;
                     this.index = index;
                 },
@@ -95,16 +107,24 @@
                 },
                 prev: function() {
                     this.index = (((this.index - 1) % this.songs.length) + this.songs.length) % this.songs.length; // shitty module since JS doesn't like mod of negative numbers
-                }
+                },
+                play: function() {
+                    this.$refs.audioplayer.play()
+                    this.playing = true;
+                },
+                pause: function() {
+                    this.$refs.audioplayer.pause()
+                    this.playing = false;
+                },
             }
         })
 
 
         const Album = Vue.component('album', {
             template:
-                `<ul>
+                `<ol>
                     <li v-for="song in songs"><a v-on:click="play(song)">{{song.name}}</a></li>
-                </ul>`,
+                </ol>`,
             data: function () {
                 return {
                     songs: []
@@ -129,7 +149,7 @@
                   self = this;
                   console.log(song.stream_location);
                   //app.$refs.player.song_stream = song.stream_location;
-                  app.$refs.player.play(self.songs, song.index);
+                  app.$refs.player.playSong(self.songs, song.index);
               }
             }
         });
