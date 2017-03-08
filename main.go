@@ -97,7 +97,7 @@ func (b *Backend) scanFilesystem() {
 				Name:           path,
 				Mime:           mimeType,
 				Path:           "",
-				StreamLocation: "http://127.0.0.1:8080/stream/songs/" + strconv.Itoa(int(b.nextSongId)),
+				StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 			}
 			b.nextSongId++
 			b.songs[s.Id] = s
@@ -125,7 +125,7 @@ func (b *Backend) scanFilesystem() {
 				Name:           file,
 				Mime:           mimeType,
 				Path:           path,
-				StreamLocation: "http://127.0.0.1:8080/stream/songs/" + strconv.Itoa(int(b.nextSongId)),
+				StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 			}
 			b.nextSongId++
 			b.songs[s.Id] = s
@@ -250,5 +250,5 @@ func main() {
 		return c.File(filepath.Join(backend.path, song.Path))
 	})
 
-	e.Logger.Fatal(e.Start("127.0.0.1:8080"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
