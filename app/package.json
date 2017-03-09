@@ -15,6 +15,7 @@
     "browserify": "^14.1.0",
     "gulp": "^3.9.1",
     "gulp-copy": "^1.0.0",
+    "gulp-sass": "^3.1.0",
     "gulp-typescript": "^3.1.5",
     "gulp-uglify": "^2.1.0",
     "gulp-vueify": "0.0.3",
@@ -28,8 +29,7 @@
     "vue-router": "^2.3.0",
     "vue-typescript-import-dts": "^3.0.1"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "browser": {
     "vue": "vue/dist/vue.common.js"
   }

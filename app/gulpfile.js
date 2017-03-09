@@ -7,13 +7,27 @@ var ts = require('gulp-typescript');
 var vueify = require('vueify')
 var tsProject = ts.createProject('./src/tsconfig.json');
 var copy = require('gulp-copy');
+var sass = require('gulp-sass');
 
-var workingDir = 'working';
+
+var workingDir = '.working';
+
+gulp.task('sass', function () {
+  return gulp.src('./assets/sass/**/*.scss')
+    .pipe(sass().on('error', sass.logError))
+    .pipe(gulp.dest('dist/assets/styles'));
+});
 
 gulp.task('copy-vue-components', function() {
 	return gulp
 		.src('src/**/*.vue')
 		.pipe(gulp.dest(workingDir + '/js'));
+});
+
+gulp.task('copy-vendor', function() {
+	return gulp
+		.src('assets/vendor/*/**')
+		.pipe(gulp.dest('dist/assets/vendor'));
 });
 
 gulp.task('typescript', function() {
@@ -23,7 +37,7 @@ gulp.task('typescript', function() {
 	return tsResult.js.pipe(gulp.dest(workingDir + '/js'));
 });
 
-gulp.task('browserify', function() {
+gulp.task('browserify', ['copy-vue-components', 'typescript'], function() {
 	    return browserify({
 		            basedir: '.',
 		            debug: true,
@@ -36,21 +50,23 @@ gulp.task('browserify', function() {
 	    .pipe(source('bundle.js'))
 		.pipe(buffer())
 		//.pipe(uglify())
-	    .pipe(gulp.dest("dist"));
+	    .pipe(gulp.dest("dist/assets/scripts"));
 });
+
+gulp.task('watch-sass', function () {
+	gulp.watch('assets/sass/**/*.scss' , ['sass']);
+});
+
 
 gulp.task('watch-ts', function () {
-	gulp.watch('src/**/*.ts' , ['typescript']);
+	gulp.watch('src/**/*.ts' , ['browserify']);
 });
 
-gulp.task('watch-js', function () {
-	gulp.watch(workingDir + '/js/**/*.js' , ['browserify']);
-});
 
 gulp.task('watch-vue', function () {
-	gulp.watch('src/**/*.vue' , ['copy-vue-components', 'browserify']);
+	gulp.watch('src/**/*.vue' , ['browserify']);
 });
 
-gulp.task('watch', ['watch-ts', 'watch-js', 'watch-vue']);
+gulp.task('watch', ['watch-ts', 'watch-vue', 'watch-sass']);
 
-gulp.task("default", ['copy-vue-components', 'typescript', 'browserify']);
+gulp.task("default", ['copy-vendor', 'sass', 'browserify']);
