@@ -1,6 +1,6 @@
 <template>
 <div class="audio-player">
-                    <input ref="timeSlider" type="range" style="width: 100%; display: block;" min="0" v-bind:max="duration">
+                    <input ref="timeSlider" class="time-slider" type="range" style="width: 100%; display: block;" min="0" v-bind:max="duration">
 
                     <a class="prev" v-on:click="prev">
                         <span class="fa fa-step-backward"></span>
@@ -14,7 +14,7 @@
                     <a class="next"  v-on:click="next">
                         <span class="fa fa-step-forward"></span>
                     </a>
-                    <input type="range" v-model="volume" min="0" max="100">
+                    <input type="range"  class="volume-slider"  v-model="volume" min="0" max="100">
                     <p>
                        <span v-if="currentSong">{{currentSong.name}}</span>
                     </p>
