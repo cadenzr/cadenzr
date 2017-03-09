@@ -62,6 +62,11 @@
         const AudioPlayer = Vue.component('audio-player', {
             template:
                 `<div class="audio-player">
+                    <p>
+                     abc
+                    </p>
+                    <input ref="timeSlider" type="range" style="width: 100%; display: block;" min="0" v-bind:max="duration">
+
                     <a class="prev" v-on:click="prev">
                         <span class="fa fa-step-backward"></span>
                     </a>
@@ -90,9 +95,36 @@
                     songs: [],
                     playing: false,
                     volume: 20,
+                    currentTime: 0,
+                    duration: 0,
                 }
             },
             mounted: function () {
+                var self = this;
+                var timeupdate = true;
+                this.$refs.audioplayer.addEventListener("timeupdate", function() {
+                    if(!timeupdate) {
+                        return;
+                    }
+
+                    self.currentTime = self.$refs.audioplayer.currentTime;
+                    self.$refs.timeSlider.value = self.currentTime;
+                });
+
+                this.$refs.timeSlider.addEventListener("input", function() {
+                    timeupdate = false;
+                });
+
+                this.$refs.timeSlider.addEventListener("change", function() {
+                    self.currentTime = self.$refs.timeSlider.value;
+                    self.$refs.audioplayer.currentTime = self.currentTime;
+                    timeupdate = true;
+                });
+
+                this.$refs.audioplayer.addEventListener("loadeddata", function() {
+                    self.duration = self.$refs.audioplayer.duration;
+                });
+
                 this.$watch('index', function () {
                     this.song_stream = this.songs[this.index].stream_location;
                     this.$refs.audioplayer.load()
@@ -102,6 +134,8 @@
               this.$watch('volume', function () {
                   this.$refs.audioplayer.volume = this.volume / 100;
               });
+
+
             },
             methods: {
                 playSong: function(songs, index) {
