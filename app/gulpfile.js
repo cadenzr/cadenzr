@@ -54,4 +54,4 @@ gulp.task('watch-vue', function () {
 
 gulp.task('watch', ['watch-ts', 'watch-js', 'watch-vue']);
 
-gulp.task("default", ['watch']);
+gulp.task("default", ['copy-vue-components', 'typescript', 'browserify']);
