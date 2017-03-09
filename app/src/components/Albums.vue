@@ -10,6 +10,8 @@
 
 <script>
     var $ = require('jquery');
+    let _ = require('lodash');
+    let Album = require('./../Album').default;
 
     module.exports = {
             data: function () {
@@ -24,10 +26,9 @@
               loadAlbums: function(){
                   self = this
                   $.getJSON( "./albums", function(data) {
-                        self.albums = data;
-                        self.albums.forEach(function(album) {
-                            console.log(album.id);
-                            album.link = "albums/" + album.id;
+                        self.albums = _.map(data, (album) => {
+                            album.link = 'albums/' + album.id;
+                            return new Album(album);
                         });
                   });
               }

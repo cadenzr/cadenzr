@@ -14,86 +14,89 @@
                     <a class="next"  v-on:click="next">
                         <span class="fa fa-step-forward"></span>
                     </a>
-                    <audio ref="audioplayer" v-on:ended="next" controls>
-                        <source :src="song_stream" type="audio/mpeg">
-                        Your browser does not support the audio tag.
-                    </audio>
                     <input type="range" v-model="volume" min="0" max="100">
                     <p>
-                       <span v-if="index >= 0">{{songs[index].name}}</span>
+                       <span v-if="currentSong">{{currentSong.name}}</span>
                     </p>
 </div>
 </template>
 
 <script>
+    let PubSub = require('./../PubSub').default;
+    let AudioPlayer = require('./../AudioPlayer').default;
+    let AudioPlayerEvents = require('./../AudioPlayer').events;
+
     module.exports = {
             data: function () {
                 return {
-                    song_stream: "",
-                    index: -1,
-                    songs: [],
                     playing: false,
-                    volume: 20,
+                    volume: AudioPlayer.getVolume(),
                     currentTime: 0,
                     duration: 0,
+                    currentSong: null,
                 }
             },
             mounted: function () {
                 var self = this;
-                var timeupdate = true;
-                this.$refs.audioplayer.addEventListener("timeupdate", function() {
-                    if(!timeupdate) {
+                let isSeeking = false;
+
+                PubSub.subscribe(AudioPlayerEvents.SongChanged, (song) => {
+                    self.currentSong = song;
+                    self.duration = song.duration;
+                    self.$forceUpdate();
+                });
+
+                PubSub.subscribe(AudioPlayerEvents.TimeChanged, (time) => {
+                    if(isSeeking) {
+                        // Just return so the slider does not jump back.
                         return;
                     }
 
-                    self.currentTime = self.$refs.audioplayer.currentTime;
-                    self.$refs.timeSlider.value = self.currentTime;
+                    self.currentTime = time;
+                    self.$refs.timeSlider.value = self.currentTime;          
                 });
 
-                this.$refs.timeSlider.addEventListener("input", function() {
-                    timeupdate = false;
+                PubSub.subscribe(AudioPlayerEvents.Pause, () => {
+                    self.playing = false;
+                    self.$forceUpdate(); 
                 });
 
-                this.$refs.timeSlider.addEventListener("change", function() {
-                    self.currentTime = self.$refs.timeSlider.value;
-                    self.$refs.audioplayer.currentTime = self.currentTime;
-                    timeupdate = true;
+                PubSub.subscribe(AudioPlayerEvents.Play, () => {
+                    self.playing = true;
+                    self.$forceUpdate(); 
                 });
 
-                this.$refs.audioplayer.addEventListener("loadeddata", function() {
-                    self.duration = self.$refs.audioplayer.duration;
+                PubSub.subscribe(AudioPlayerEvents.VolumeChanged, (volume) => {
+                    self.volume = volume;
+                    self.$forceUpdate(); 
                 });
 
-                this.$watch('index', function () {
-                    this.song_stream = this.songs[this.index].stream_location;
-                    this.$refs.audioplayer.load()
-                    this.play()
+                self.$watch('volume', () => {
+                    AudioPlayer.setVolume(self.volume);
                 });
 
-              this.$watch('volume', function () {
-                  this.$refs.audioplayer.volume = this.volume / 100;
-              });
+                self.$refs.timeSlider.addEventListener('input', () => {
+                    isSeeking = true;
+                });
 
+                self.$refs.timeSlider.addEventListener('change', () => {
+                    isSeeking = false;
+                    AudioPlayer.seek(self.$refs.timeSlider.value);
+                });
 
             },
             methods: {
-                playSong: function(songs, index) {
-                    this.songs = songs;
-                    this.index = index;
-                },
                 next: function() {
-                    this.index = (this.index + 1) % this.songs.length;
+                    AudioPlayer.next();
                 },
                 prev: function() {
-                    this.index = (((this.index - 1) % this.songs.length) + this.songs.length) % this.songs.length; // shitty module since JS doesn't like mod of negative numbers
+                    AudioPlayer.prev();
                 },
                 play: function() {
-                    this.$refs.audioplayer.play()
-                    this.playing = true;
+                    AudioPlayer.play();
                 },
                 pause: function() {
-                    this.$refs.audioplayer.pause()
-                    this.playing = false;
+                    AudioPlayer.pause();
                 },
             }
     };

@@ -5,16 +5,17 @@ import * as Vue from 'vue';
 import * as Router from 'vue-router';
 Vue.use(Router);
 
-import * as AudioPlayer from './components/AudioPlayer.vue';
-import * as Albums from './components/Albums.vue';
-import * as Album from './components/Album.vue';
+import * as AudioPlayerComponent from './components/AudioPlayer.vue';
+import * as AlbumsComponent from './components/Albums.vue';
+import * as AlbumComponent from './components/Album.vue';
 
+import './AudioPlayer';
 
 var router = new Router({
     routes: [
-          { path: '/', component: Albums },
-          { path: '/albums', component: Albums },
-          { path: '/albums/:id', component: Album }
+          { path: '/', component: AlbumsComponent },
+          { path: '/albums', component: AlbumsComponent },
+          { path: '/albums/:id', component: AlbumComponent }
     ],
 });
 
@@ -22,9 +23,9 @@ var app = new Vue({
     el: '#app',
     router: router,
     components: {
-        'audio-player': AudioPlayer,
-        'albums': Albums,
-        'album': Album,
+        'audio-player': AudioPlayerComponent,
+        'albums': AlbumsComponent,
+        'album': AlbumComponent,
     }
 });
 

@@ -10,8 +10,8 @@
         </tr>
     </thead>
     <tbody>
-        <tr v-for="song in songs" v-on:click="play(song)">
-            <td>{{song.index + 1}}</td>
+        <tr v-for="(song, $index) in album.getSongs()" v-on:click="play($index)">
+            <td>{{$index}}</td>
             <td>{{song.name}}</td>
             <td>{{song.artist}}</td>
             <td>{{song.album}}</td>
@@ -22,12 +22,16 @@
 </template>
 
 <script>
-    var $ = require('jquery');
+    let $ = require('jquery');
+    let _ = require('lodash');
+    let Song = require('./../Song').default;
+    let Album = require('./../Album').default;
+    let AudioPlayer = require('./../AudioPlayer').default;
 
     module.exports = {
             data: function () {
                 return {
-                    songs: []
+                    album: new Album(),
                 }
             },
             mounted () {
@@ -37,19 +41,20 @@
               loadSongs: function(){
                   self = this
                   $.getJSON( "./albums/" + self.$route.params.id + "/songs", function(data) {
-                      self.songs = data;
-                      var count = 0;
-                      self.songs.forEach(function(song) {
-                          song.index = count;
-                          count++;
-                      })
+                      data = _.map(data, (song) => {
+                          return new Song(song);
+                      });
+
+
+                      self.album.setSongs(data);
                   });
               },
-              play: function(song){
-                  self = this;
-                  console.log(song.stream_location);
-                  //app.$refs.player.song_stream = song.stream_location;
-                  self.$root.$refs.player.playSong(self.songs, song.index);
+              play: function(index){
+                  this.album.setIndex(index);
+                  // Assume that if user plays a song in this album he wants to play the whole album.
+                  AudioPlayer.setProvider(this.album);
+                  AudioPlayer.restartCurrent();
+                  AudioPlayer.play();
               }
             }
     };
