@@ -8,14 +8,15 @@ var vueify = require('vueify')
 var tsProject = ts.createProject('./src/tsconfig.json');
 var copy = require('gulp-copy');
 var sass = require('gulp-sass');
-
+var livereload = require('gulp-livereload');
 
 var workingDir = '.working';
 
 gulp.task('sass', function () {
   return gulp.src('./assets/sass/**/*.scss')
     .pipe(sass().on('error', sass.logError))
-    .pipe(gulp.dest('dist/assets/styles'));
+    .pipe(gulp.dest('dist/assets/styles'))
+	.pipe(livereload());
 });
 
 gulp.task('copy-vue-components', function() {
@@ -50,7 +51,8 @@ gulp.task('browserify', ['copy-vue-components', 'typescript'], function() {
 	    .pipe(source('bundle.js'))
 		.pipe(buffer())
 		//.pipe(uglify())
-	    .pipe(gulp.dest("dist/assets/scripts"));
+	    .pipe(gulp.dest("dist/assets/scripts"))
+		.pipe(livereload());
 });
 
 gulp.task('watch-sass', function () {
@@ -67,6 +69,8 @@ gulp.task('watch-vue', function () {
 	gulp.watch('src/**/*.vue' , ['browserify']);
 });
 
-gulp.task('watch', ['watch-ts', 'watch-vue', 'watch-sass']);
+gulp.task('watch', ['watch-ts', 'watch-vue', 'watch-sass'], function() {
+	livereload.listen();
+});
 
 gulp.task("default", ['copy-vendor', 'sass', 'browserify']);

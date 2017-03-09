@@ -15,6 +15,7 @@
     "browserify": "^14.1.0",
     "gulp": "^3.9.1",
     "gulp-copy": "^1.0.0",
+    "gulp-livereload": "^3.8.1",
     "gulp-sass": "^3.1.0",
     "gulp-typescript": "^3.1.5",
     "gulp-uglify": "^2.1.0",
