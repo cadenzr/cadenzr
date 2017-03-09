@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/labstack/echo"
+	id3 "github.com/mikkyang/id3-go"
 )
 
 type Song struct {
@@ -19,6 +20,10 @@ type Song struct {
 
 	Id             uint32 `json:"id"`
 	Name           string `json:"name"`
+	Artist         string `json:"artist"`
+	Album          string `json:"album"`
+	Year           string `json:"year"`
+	Genre          string `json:"genre"`
 	Mime           string `json:"mime"`
 	Path           string `json:"-"`
 	StreamLocation string `json:"stream_location"`
@@ -99,6 +104,7 @@ func (b *Backend) scanFilesystem() {
 				Path:           "",
 				StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 			}
+
 			b.nextSongId++
 			b.songs[s.Id] = s
 
@@ -127,6 +133,19 @@ func (b *Backend) scanFilesystem() {
 				Path:           path,
 				StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 			}
+
+			mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
+			if err != nil {
+				log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Info("Couldn't parse id3 tag")
+			} else {
+				defer mp3File.Close()
+				s.Name = mp3File.Title()
+				s.Artist = mp3File.Artist()
+				s.Album = mp3File.Album()
+				s.Year = mp3File.Year()
+				s.Genre = mp3File.Genre()
+			}
+
 			b.nextSongId++
 			b.songs[s.Id] = s
 
