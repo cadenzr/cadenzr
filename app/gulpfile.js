@@ -54,18 +54,4 @@ gulp.task('watch-vue', function () {
 
 gulp.task('watch', ['watch-ts', 'watch-js', 'watch-vue']);
 
-gulp.task("default", function () {
-	    return browserify({
-		            basedir: '.',
-		            debug: true,
-		            entries: ['src/main.ts'],
-		            cache: {},
-		            packageCache: {}
-		        })
-	    .plugin(tsify, tsConfig.compilerOptions)
-	    .bundle()
-	    .pipe(source('bundle.js'))
-		.pipe(buffer())
-		//.pipe(uglify())
-	    .pipe(gulp.dest("dist"));
-	});
+gulp.task("default", ['watch']);
