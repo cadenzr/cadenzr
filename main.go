@@ -34,6 +34,7 @@ type Album struct {
 
 	Id   uint32 `json:"id"`
 	Name string `json:"name"`
+	Year string `json:"year"`
 	Path string `json:"-"`
 
 	Songs []*Song `json:"-"`
@@ -94,64 +95,48 @@ func (b *Backend) scanFilesystem() {
 
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
-		i := strings.LastIndexFunc(path, func(r rune) bool { return r == filepath.Separator })
-		if i == -1 {
-			// No seperator -> Song in root directory -> No album.
-			s := &Song{
-				Id:             b.nextSongId,
-				Name:           path,
-				Mime:           mimeType,
-				Path:           "",
-				StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
-			}
-
-			b.nextSongId++
-			b.songs[s.Id] = s
-
-			log.WithFields(log.Fields{"name": s.Name}).Info("Added song.")
-		} else {
-			// Seperator so guess that directory is album name.
-			dir, file := filepath.Split(path)
-			albumName := dir[strings.LastIndexFunc(dir[:len(dir)-1], func(r rune) bool { return r == filepath.Separator })+1 : len(dir)-1]
-			album := b.albumByName(albumName)
-			if album == nil {
-				album = &Album{
-					Id:   b.nextAlbumId,
-					Name: albumName,
-					Path: path,
-				}
-				b.nextAlbumId++
-
-				b.albums[album.Id] = album
-				log.WithFields(log.Fields{"name": album.Name}).Info("Created new album.")
-			}
-
-			s := &Song{
-				Id:             b.nextSongId,
-				Name:           file,
-				Mime:           mimeType,
-				Path:           path,
-				StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
-			}
-
-			mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
-			if err != nil {
-				log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Info("Couldn't parse id3 tag")
-			} else {
-				defer mp3File.Close()
-				s.Name = mp3File.Title()
-				s.Artist = mp3File.Artist()
-				s.Album = mp3File.Album()
-				s.Year = mp3File.Year()
-				s.Genre = mp3File.Genre()
-			}
-
-			b.nextSongId++
-			b.songs[s.Id] = s
-
-			album.Songs = append(album.Songs, s)
-			log.WithFields(log.Fields{"name": s.Name, "album": album.Name}).Info("Added song.")
+		_, file := filepath.Split(path)
+		s := &Song{
+			Id:             b.nextSongId,
+			Name:           file,
+			Mime:           mimeType,
+			Path:           path,
+			StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 		}
+
+		mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Info("Couldn't parse id3 tag")
+		} else {
+			defer mp3File.Close()
+			s.Name = mp3File.Title()
+			s.Artist = mp3File.Artist()
+			s.Album = mp3File.Album()
+			s.Year = mp3File.Year()
+			s.Genre = mp3File.Genre()
+		}
+
+		b.nextSongId++
+		b.songs[s.Id] = s
+
+		//albumName := dir[strings.LastIndexFunc(dir[:len(dir)-1], func(r rune) bool { return r == filepath.Separator })+1 : len(dir)-1]
+		//albumName := s.Album
+		album := b.albumByName(s.Album)
+		if album == nil {
+			album = &Album{
+				Id:   b.nextAlbumId,
+				Name: s.Album,
+				Year: s.Year,
+				Path: path,
+			}
+			b.nextAlbumId++
+
+			b.albums[album.Id] = album
+			log.WithFields(log.Fields{"name": album.Name}).Info("Created new album.")
+		}
+
+		album.Songs = append(album.Songs, s)
+		log.WithFields(log.Fields{"name": s.Name, "album": album.Name}).Info("Added song.")
 
 		return nil
 	})

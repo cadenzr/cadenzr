@@ -1,11 +1,28 @@
 <template>
-<ul>
-    <li v-for="album in albums">
-        <router-link :to="{ path: album.link }">
-            {{album.name}}
-        </router-link>
-    </li>
-</ul>
+    <table class="albumlist pure-table pure-table-horizontal pure-table-striped">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Album</th>
+                <th>Year</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="(album, $index) in albums">
+                
+                <td>
+                    <router-link :to="{ path: album.link }">{{$index+1}}</router-link>
+                </td>
+                <td>
+                    <router-link :to="{ path: album.link }">{{album.name}}</router-link>
+                </td>
+                <td>
+                    <router-link :to="{ path: album.link }">{{album.year}}</router-link>
+                </td>
+            </tr>
+            
+        </tbody>
+    </table>
 </template>
 
 <script>
