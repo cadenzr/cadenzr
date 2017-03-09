@@ -62,10 +62,7 @@
         const AudioPlayer = Vue.component('audio-player', {
             template:
                 `<div class="audio-player">
-                    <p>
-                     abc
-                    </p>
-                    <input ref="timeSlider" type="range" style="width: 100%; display: block;" min="0" v-bind:max="duration">
+                    <input ref="timeSlider" class="time-slider" type="range" min="0" v-bind:max="duration">
 
                     <a class="prev" v-on:click="prev">
                         <span class="fa fa-step-backward"></span>
@@ -83,7 +80,7 @@
                         <source :src="song_stream" type="audio/mpeg">
                         Your browser does not support the audio tag.
                     </audio>
-                    <input type="range" v-model="volume" min="0" max="100">
+                    <input class="volume-slider"  type="range" v-model="volume" min="0" max="100">
                     <p>
                        <span v-if="index >= 0">{{songs[index].name}}</span>
                     </p>

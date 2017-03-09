@@ -13,6 +13,7 @@ li {
   left: 0;
   width: 100%;
   padding: 25px;
+  box-sizing: border-box;
   background-color: #EFEFEF; }
   .audio-player audio {
     display: none; }
@@ -40,5 +41,40 @@ li {
     font-family: sans-serif;
     font-weight: 300;
     color: #05A8AA; }
+  .audio-player .time-slider, .audio-player .volume-slider {
+    -webkit-appearance: none;
+    background-color: #05A8AA;
+    border: 1px solid #05A8AA;
+    border-radius: 12px;
+    height: 12px;
+    margin-bottom: 2em;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden; }
+    .audio-player .time-slider::-webkit-slider-thumb, .audio-player .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      background-color: #05b2b4;
+      cursor: pointer;
+      display: block;
+      height: 12px;
+      width: 12px;
+      position: relative; }
+      .audio-player .time-slider::-webkit-slider-thumb::after, .audio-player .volume-slider::-webkit-slider-thumb::after {
+        background: #fff;
+        border-left: none;
+        -moz-box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
+        -webkit-box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
+        box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
+        content: '.';
+        display: block;
+        left: 12px;
+        height: 12px;
+        position: absolute;
+        text-indent: -999em;
+        top: 0;
+        width: 10000px;
+        pointer-events: none; }
+  .audio-player .volume-slider {
+    width: auto; }
 
 /*# sourceMappingURL=style.css.map */
