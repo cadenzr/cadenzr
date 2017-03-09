@@ -1,3 +1,5 @@
+@import "pure";
+
 $black: #070707;
 $primary: #05A8AA;
 $secondary: #EFEFEF;
@@ -8,10 +10,18 @@ body {
     font-weight: 300;
     font-size: 18px;
     color: $black;
+    padding: 25px;
 }
 
 li {
     margin-top: 0.5em;
+}
+
+
+.playlist {
+    tr {
+        cursor: pointer;
+    }
 }
 
 .audio-player {

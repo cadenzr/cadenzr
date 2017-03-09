@@ -159,9 +159,27 @@
 
         const Album = Vue.component('album', {
             template:
-                `<ol>
-                    <li v-for="song in songs"><a v-on:click="play(song)">{{song.name}}</a></li>
-                </ol>`,
+                `<table class="playlist pure-table pure-table-horizontal pure-table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Title</th>
+                            <th>Artist</th>
+                            <th>Album</th>
+                            <th>Year</th>
+                        </tr>
+                    </thead>
+                
+                    <tbody>
+                        <tr v-for="song in songs" v-on:click="play(song)">
+                            <td>{{song.index + 1}}</td>
+                            <td>{{song.name}}</td>
+                            <td>{{song.artist}}</td>
+                            <td>{{song.album}}</td>
+                            <td>{{song.year}}</td>
+                        </tr>
+                    </tbody>
+                </table>`,
             data: function () {
                 return {
                     songs: []
