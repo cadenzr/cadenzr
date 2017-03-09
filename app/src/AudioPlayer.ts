@@ -63,26 +63,26 @@ class AudioPlayer {
         PubSub.publish(events.Pause, this.provider.currentSong());
     }
 
-    next() {
+    next() : Promise<void> {
         let s = this.provider.nextSong();
         if(s == null) {
             return;
         }
 
-        this.loadSong(s, true)
+        return this.loadSong(s, true)
         .then(() => {
             this.play();
         });
 
     }
 
-    prev() {
+    prev() : Promise<void> {
         let s = this.provider.prevSong();
         if(s == null) {
             return;
         }
 
-        this.loadSong(s, true)
+        return this.loadSong(s, true)
         .then(() => {
             this.play();
         });
@@ -92,13 +92,13 @@ class AudioPlayer {
      * Force a refetch of the current song from the provider.
      * Useful if the user wants to play a song in an album for example.
      */
-    restartCurrent() {
+    restartCurrent() : Promise<void> {
         let s = this.provider.currentSong();
         if(s == null) {
             return;
         }
 
-        this.loadSong(s, true);
+        return this.loadSong(s, true);
     }
 
     /**

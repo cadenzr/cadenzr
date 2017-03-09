@@ -53,8 +53,10 @@
                   this.album.setIndex(index);
                   // Assume that if user plays a song in this album he wants to play the whole album.
                   AudioPlayer.setProvider(this.album);
-                  AudioPlayer.restartCurrent();
-                  AudioPlayer.play();
+                  AudioPlayer.restartCurrent()
+                  .then(() => {
+                      AudioPlayer.play();
+                  });
               }
             }
     };
