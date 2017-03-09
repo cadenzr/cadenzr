@@ -2,7 +2,6 @@ var gulp = require("gulp");
 var browserify = require("browserify");
 var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
-var tsify = require("tsify");
 var uglify = require('gulp-uglify');
 var ts = require('gulp-typescript');
 var vueify = require('vueify')
