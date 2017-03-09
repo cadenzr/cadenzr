@@ -69,8 +69,11 @@ class AudioPlayer {
             return;
         }
 
-        this.loadSong(s, true);
-        this.play();
+        this.loadSong(s, true)
+        .then(() => {
+            this.play();
+        });
+
     }
 
     prev() {
@@ -79,8 +82,10 @@ class AudioPlayer {
             return;
         }
 
-        this.loadSong(s, true);
-        this.play();
+        this.loadSong(s, true)
+        .then(() => {
+            this.play();
+        });
     }
 
     /**
@@ -140,22 +145,26 @@ class AudioPlayer {
         return this.audioEl.volume * 100;
     }
 
-    private loadSong(s: Song, publish: boolean) {
+    private loadSong(s: Song, publish: boolean) : Promise<any> {
         var self = this;
 
-        this.audioEl.src = s.stream_location;
-        this.audioEl.ondurationchange = () => {
-            s.duration = self.audioEl.duration;
+        let p = new Promise<any>((resolve) => {
+            self.audioEl.ondurationchange = () => {
+                s.duration = self.audioEl.duration;
 
-            if(publish) {
-                PubSub.publish(events.SongChanged, s);
-            }
-        };
+                if(publish) {
+                    PubSub.publish(events.SongChanged, s);
+                }
+
+                resolve();
+            };
+        });
+
+        self.audioEl.src = s.stream_location;
+        self.audioEl.load(); // Required so events are being generated.
+
+        return p;
     }
-
-    private onReceivedMetaData() {
-        console.log('got meta');
-    };
 
     private audioEl: HTMLMediaElement
     private provider: Provider;

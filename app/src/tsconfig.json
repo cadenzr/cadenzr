@@ -6,7 +6,8 @@
         "removeComments": true,
         "preserveConstEnums": true,
         "sourceMap": true,
-        "types": ["vue-typescript-import-dts"]
+        "types": ["vue-typescript-import-dts"],
+        "target": "es2015"
     },
     "filesGlob": [
         "./**/*.ts"
