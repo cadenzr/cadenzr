@@ -24,6 +24,13 @@ li {
     }
 }
 
+.albumlist {
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+}
+
 .audio-player {
     
     $size: 50px;
