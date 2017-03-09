@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "types": ["vue-typescript-import-dts"]
+    },
+    "filesGlob": [
+        "./**/*.ts"
+    ]
+}
