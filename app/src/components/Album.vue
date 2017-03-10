@@ -1,11 +1,13 @@
 <template>
 <div>
-    <div class="album-meta">
-        <img src="http://www.interactivepixel.net/env/jhap2wp/data/default_artwork/music_ph.png">
-        <div class="album-meta-info">
-            <h1>Porta Euismod Nullam Pellentesque</h1>
-            <h2>Sit Commodo</h2>
-            <p>1994</p>
+    <div class="album-meta pure-g">
+        <div class="album-meta-cover pure-u-4-24">
+            <img src="http://www.interactivepixel.net/env/jhap2wp/data/default_artwork/music_ph.png">
+        </div>
+        
+        <div class="album-meta-info pure-u-20-24">
+            <h1>{{album.name}}</h1>
+            <h2>{{album.getSongs()[0].artist}} <span>{{album.year}}</span></h2>
         </div>
     </div>
     
