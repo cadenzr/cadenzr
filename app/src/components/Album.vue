@@ -20,7 +20,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="(song, $index) in album.getSongs()" v-on:click="play($index)">
+            <tr v-for="(song, $index) in album.getSongs()" v-on:click="play($index)" v-bind:class="{ playing: AudioPlayer.isCurrentSong(song) }">
                 <td>{{$index+1}}</td>
                 <td>{{song.name}}</td>
                 <td>{{song.artist}}</td>
@@ -45,6 +45,7 @@
                 return {
                     album: new Album(),
                     show: false,
+                    AudioPlayer: AudioPlayer,
                 }
             },
             mounted () {

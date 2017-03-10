@@ -53,6 +53,34 @@ class AudioPlayer {
         document.body.appendChild(this.audioEl);
     }
 
+    /**
+     * Get the current playing song.
+     */
+    currentSong() : Song {
+        return this.provider.currentSong();
+    }
+
+    /**
+     * Check if a song is the current song. Check is done by id.
+     * 
+     * @param s Check if this song is the current song.
+     */
+    isCurrentSong(s: Song | number) : boolean {
+        let cs = this.currentSong();
+        if(cs === null) {
+            return false;
+        }
+
+        let id = 0;
+        if(s instanceof Song) {
+            id = s.id;
+        } else {
+            id = s;
+        }
+
+        return id === cs.id;
+    }
+
     play() {
         this.audioEl.play();
         this.audioEl.onplaying = () => {
