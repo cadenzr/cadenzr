@@ -42,7 +42,7 @@
             methods: {
               loadAlbums: function(){
                   let self = this
-                  $.getJSON( "./albums", function(data) {
+                  $.getJSON( "/albums", function(data) {
                         self.albums = _.map(data, (album) => {
                             album.link = 'albums/' + album.id;
                             return new Album(album);

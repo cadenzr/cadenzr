@@ -101,7 +101,7 @@ func (b *Backend) scanFilesystem() {
 			Name:           file,
 			Mime:           mimeType,
 			Path:           path,
-			StreamLocation: "./stream/songs/" + strconv.Itoa(int(b.nextSongId)),
+			StreamLocation: "/stream/songs/" + strconv.Itoa(int(b.nextSongId)),
 		}
 
 		mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
@@ -214,7 +214,7 @@ func main() {
 	e := echo.New()
 	e.Use(corsHeader)
 
-	e.Static("/app", "app")
+	e.Static("/app", "app/dist")
 
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")

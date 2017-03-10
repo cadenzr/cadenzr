@@ -9,9 +9,6 @@ import * as AudioPlayerComponent from './components/AudioPlayer.vue';
 import * as AlbumsComponent from './components/Albums.vue';
 import * as AlbumComponent from './components/Album.vue';
 
-import {polyfill} from 'es6-promise';
-polyfill();
-
 import './AudioPlayer';
 
 var router = new Router({

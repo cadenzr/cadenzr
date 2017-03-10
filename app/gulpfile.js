@@ -9,8 +9,25 @@ var tsProject = ts.createProject('./src/tsconfig.json');
 var copy = require('gulp-copy');
 var sass = require('gulp-sass');
 var livereload = require('gulp-livereload');
+var htmlreplace = require('gulp-html-replace');
+var util = require('gulp-util');
 
 var workingDir = '.working';
+
+gulp.task('index', function () {
+	var bundle = '/app/assets/scripts/bundle.';
+	if(util.env.production) {
+		bundle += 'min.';
+	}
+	bundle += 'js';
+
+	return gulp.src('index.html')
+		.pipe(htmlreplace({
+		'bundle': bundle
+		}))
+		.pipe(gulp.dest('dist/'))
+		.pipe(livereload());
+});
 
 gulp.task('sass', function () {
   return gulp.src('./assets/sass/**/*.scss')
@@ -39,7 +56,13 @@ gulp.task('typescript', function() {
 });
 
 gulp.task('browserify', ['copy-vue-components', 'typescript'], function() {
-	    return browserify({
+		var bundle = 'bundle.';
+		if(util.env.production) {
+			bundle += 'min.';
+		}
+		bundle += 'js';
+
+	    var r = browserify({
 		            basedir: '.',
 		            debug: true,
 		            entries: [workingDir + '/js/main.js'],
@@ -48,11 +71,17 @@ gulp.task('browserify', ['copy-vue-components', 'typescript'], function() {
 		        })
 		.transform(vueify)
 	    .bundle()
-	    .pipe(source('bundle.js'))
-		.pipe(buffer())
-		//.pipe(uglify())
-	    .pipe(gulp.dest("dist/assets/scripts"))
-		.pipe(livereload());
+	    .pipe(source(bundle))
+		.pipe(buffer());
+
+		if(util.env.production) {
+			r.pipe(uglify())
+		}
+
+	    r.pipe(gulp.dest("dist/assets/scripts"))
+		r.pipe(livereload());
+
+		return r;
 });
 
 gulp.task('watch-sass', function () {
@@ -69,8 +98,12 @@ gulp.task('watch-vue', function () {
 	gulp.watch('src/**/*.vue' , ['browserify']);
 });
 
-gulp.task('watch', ['watch-ts', 'watch-vue', 'watch-sass'], function() {
+gulp.task('watch-index', function () {
+	gulp.watch('index.html' , ['index']);
+});
+
+gulp.task('watch', ['watch-index', 'watch-ts', 'watch-vue', 'watch-sass'], function() {
 	livereload.listen();
 });
 
-gulp.task("default", ['copy-vendor', 'sass', 'browserify']);
+gulp.task("default", ['index', 'copy-vendor', 'sass', 'browserify']);

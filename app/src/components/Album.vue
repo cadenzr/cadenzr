@@ -40,7 +40,7 @@
             methods: {
               loadSongs: function(){
                   let self = this
-                  $.getJSON( "./albums/" + self.$route.params.id + "/songs", function(data) {
+                  $.getJSON( "/albums/" + self.$route.params.id + "/songs", function(data) {
                       data = _.map(data, (song) => {
                           return new Song(song);
                       });
