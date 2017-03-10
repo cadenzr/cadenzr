@@ -83,6 +83,12 @@ $audio-player-size: 80px;
         background-color: darken($black, 6);
         text-align: center;
 
+        .cover {
+            height: $audio-player-size;
+            width: $audio-player-size;
+            float: left;
+        }
+
         .time-slider {
             @extend %slider;
         }
