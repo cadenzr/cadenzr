@@ -1,16 +1,28 @@
 @import "pure";
 
-$black: #070707;
+//$black: #070707;
 $primary: #05A8AA;
 $secondary: #EFEFEF;
 $tertiary: #4E6766;
+
+
+/* RGB */
+$black: rgba(47, 47, 47, 1);
+$orange: rgba(211, 97, 53, 1);
+$gray: rgba(205, 205, 205, 1);
+$color4: rgba(223, 248, 235, 1);
+$color5: rgba(1, 22, 56, 1);
+
 
 body {
     font-family: sans-serif;
     font-weight: 300;
     font-size: 18px;
     color: $black;
-    padding: 25px;
+    padding: 0;
+    margin: 0;
+    
+    background-color: $black;
 }
 
 li {
@@ -33,104 +45,151 @@ li {
 
 .audio-player {
     
-    $size: 50px;
+    $audio-player-size: 80px;
     
     position: fixed;
     bottom: 0;
     left: 0;
+    display: block;
     width: 100%;
-    padding: $size/2;
+    height: $audio-player-size;
     box-sizing: border-box;
-    background-color: $secondary;
+    background-color: darken($black, 10);
     
-    audio {
-        display: none;
-    }
     
-    a { 
-        font-size: 16px;
+    .playback-controls {
         
-        display: inline-block;
-        vertical-align: middle;
-        border-radius: 50%;
-        background-color: #fff;
-        border: 1px $primary solid;
-        color: $primary;
+        $size: 40px;
+        padding-top: ($audio-player-size - ($size * 1.35))/2;
         
-        width: $size;
-        height: $size;
         text-align: center;
-        line-height: $size;
         
-        &.play,
-        &.pause {
-            $size: $size * 1.35;
-            //font-size: 30px;
+        a { 
+            font-size: 25px;
+            
+            display: inline-block;
+            vertical-align: middle;
+            
+            color: $orange;
+            
             width: $size;
             height: $size;
+            text-align: center;
             line-height: $size;
+            padding: 0;
+            margin: 0;
+            
+            &.play,
+            &.pause {
+                $size: $size * 1.35;
+                font-size: 40px;
+                width: $size;
+                height: $size;
+                line-height: $size;
+            }
+            
         }
         
-    }
-    
-    p {
-        display: inline-block;
-        vertical-align: middle;
-        margin-left: $size/2;
-        font-size: 20px;
-        font-family: sans-serif;
-        font-weight: 300;
-        color: $primary;
-    }
-    
-    
-    .time-slider {
         
-        $size: 12px;
+    }
+    
+    %slider {
+        $height: 5px;
         
         -webkit-appearance: none;
-        background-color: $primary;
-        border: 1px solid $primary;
-        border-radius: $size;
-        height: $size;
-        margin-bottom: 2em;
-        width: 100%;
-        box-sizing: border-box;
-        overflow: hidden;
+        margin-top: -$height;
+        height: $height;
+        background-color: $gray;
+        border-radius: $height/2 $height/2 0 0;
         
         &::-webkit-slider-thumb {
             -webkit-appearance: none;
-            background-color: lighten($primary, 2);
-            //border-radius: 50%;
-            cursor: pointer;
             display: block;
-            height: $size;
-            width: $size;
-            position: relative;
+            width: $height;
+            height: $height * 3;
+            background-color: $orange;
             
-            &::after {
-                background: #fff;
-                border-left: none;
-                -moz-box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
-                -webkit-box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
-                box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
-                content: '.';
-                display: block;
-                left: $size;
-                height: $size;
-                position: absolute;
-                text-indent: -999em;
-                top: 0;
-                width: 10000px;
-                pointer-events: none
-            }
         }
     }
+    
+    .current-song {
+        
+        height: $audio-player-size;
+        background-color: darken($black, 6);
+        text-align: center;
+        
+        .time-slider {
+            @extend %slider;
+        }
+        
+        
+        position: relative;
+        
+        p {
 
-
-    .volume-slider {
-        @extend .time-slider;
-        width: auto;
+            position: absolute;
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+            color: $orange;
+            left: 0;
+            right: 0;
+                
+            &.song {
+                font-weight: 600;
+                font-size: 20px;
+                
+                padding-bottom: 1px;
+                
+                bottom: $audio-player-size / 2;
+            }
+            
+            &.artist {
+                font-weight: 400;
+                font-size: 16px;
+                
+                padding-top: 1px;
+                
+                top: $audio-player-size / 2;
+            }
+            
+        }
+        
+    }
+    
+    .volume-controls {
+        
+        font-size: 0;
+        position: relative;
+        
+        .volume-slider {
+            @extend %slider;
+            
+            background-color: $black;
+            
+            $height: 12px;
+            position: absolute;
+            top: 50%;
+            left: 20%;
+            right: 20%;
+            margin-top: -$height/2;
+            
+            height: $height;
+            border-radius: $height;
+            
+            &::-webkit-slider-thumb {
+                height: $height;
+                width: $height*2;
+                border-radius: $height;
+                
+                background-color: darken($orange,0);
+            }
+        }
+        
+    }
+    
+    audio {
+        display: none;
     }
     
     

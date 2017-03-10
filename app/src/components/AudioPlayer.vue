@@ -1,23 +1,29 @@
 <template>
 <div class="audio-player">
-                    <input ref="timeSlider" class="time-slider" type="range" style="width: 100%; display: block;" min="0" v-bind:max="duration">
-
-                    <a class="prev" v-on:click="prev">
-                        <span class="fa fa-step-backward"></span>
-                    </a>
-                    <a class="play"  v-on:click="play" v-if="!playing">
-                        <span class="fa fa-play"></span>
-                    </a>
-                    <a class="pause"  v-on:click="pause" v-if="playing">
-                        <span class="fa fa-pause"></span>
-                    </a>
-                    <a class="next"  v-on:click="next">
-                        <span class="fa fa-step-forward"></span>
-                    </a>
-                    <input type="range"  class="volume-slider"  v-model="volume" min="0" max="100">
-                    <p>
-                       <span v-if="currentSong">{{currentSong.name}}</span>
-                    </p>
+    <div class="pure-g">
+        <div class="pure-u-4-24 playback-controls">
+            <a class="prev" v-on:click="prev">
+                <span class="fa fa-step-backward"></span>
+            </a>
+            <a class="play"  v-on:click="play" v-if="!playing">
+                <span class="fa fa-play"></span>
+            </a>
+            <a class="pause"  v-on:click="pause" v-if="playing">
+                <span class="fa fa-pause"></span>
+            </a>
+            <a class="next"  v-on:click="next">
+                <span class="fa fa-step-forward"></span>
+            </a>
+        </div>
+        <div class="pure-u-16-24 current-song">
+            <input ref="timeSlider" class="time-slider" type="range" style="width: 100%; display: block;" min="0" v-bind:max="duration">
+            <p v-if="currentSong" class="song">{{currentSong.name}}</p>
+            <p v-if="currentSong" class="artist">{{currentSong.artist}}</p>
+        </div>
+        <div class="pure-u-4-24 volume-controls">
+            <input type="range"  class="volume-slider"  v-model="volume" min="0" max="100">
+        </div>
+    </div>                  
 </div>
 </template>
 
