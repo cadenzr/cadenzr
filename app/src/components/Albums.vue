@@ -1,5 +1,5 @@
 <template>
-    <table class="albumlist pure-table pure-table-horizontal pure-table-striped">
+    <table class="albumlist">
         <thead>
             <tr>
                 <th>#</th>

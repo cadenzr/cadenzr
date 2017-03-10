@@ -1,0 +1,38 @@
+table {
+    thead,
+    th,
+    tr,
+    td {
+        background-color: transparent;
+        background: transparent;
+    }
+    
+    font-family: 'Open Sans' sans-serif;
+    font-weight: 300;
+    font-size: 0.85em;
+    text-align: left;
+    color: lighten($gray, 10);
+    width: 100%;
+    
+    tr {
+        
+        border-bottom: solid 1px darken($black, 5);
+        
+        th,
+        td {
+            padding: 1em 0.25em;
+            
+            &:first-child {
+                color: darken($gray, 25);
+            };
+        }
+        
+        th {
+            font-weight: inherit;
+            font-variant: small-caps;
+        }
+        
+    }
+    
+    
+}

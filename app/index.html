@@ -15,8 +15,24 @@
     <div id="app">
 
         <audio-player ref="player"></audio-player>
-
-        <router-view></router-view>
+        
+        <div class="pure-g">
+            <div class="pure-u-4-24">
+            </div>
+            
+            <div class="pure-u-16-24">
+                <router-view></router-view>
+            </div>
+            
+            <div class="pure-u-4-24">
+            </div>
+            
+        </div>
+        
+        <div class="audio-player-placeholder">
+            
+        </div>
+        
     </div>
 
     <!-- build:bundle -->

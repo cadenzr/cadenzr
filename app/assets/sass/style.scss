@@ -1,12 +1,14 @@
+/**
+ * Design for Cadenzr music streamer
+ * 
+ * Author: Mathias Beke
+ * Date: March 2017
+ */
+
 @import "pure";
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:300,400,600');
 
-//$black: #070707;
-$primary: #05A8AA;
-$secondary: #EFEFEF;
-$tertiary: #4E6766;
-
-
-/* RGB */
+/* Color scheme */
 $black: rgba(47, 47, 47, 1);
 $orange: rgba(211, 97, 53, 1);
 $gray: rgba(205, 205, 205, 1);
@@ -15,7 +17,7 @@ $color5: rgba(1, 22, 56, 1);
 
 
 body {
-    font-family: sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-weight: 300;
     font-size: 18px;
     color: $black;
@@ -24,6 +26,9 @@ body {
     
     background-color: $black;
 }
+
+
+@import "table";
 
 li {
     margin-top: 0.5em;
@@ -43,9 +48,14 @@ li {
     }
 }
 
+
+$audio-player-size: 80px;
+
+.audio-player-placeholder {
+    height: $audio-player-size;
+}
+
 .audio-player {
-    
-    $audio-player-size: 80px;
     
     position: fixed;
     bottom: 0;
@@ -130,8 +140,8 @@ li {
             position: absolute;
             margin: 0;
             padding: 0;
-            font-family: sans-serif;
             color: $orange;
+            font-family: 'Open Sans';
             left: 0;
             right: 0;
                 
