@@ -12,7 +12,6 @@ $audio-player-size: 80px;
 }
 
 .audio-player {
-
     position: fixed;
     bottom: 0;
     left: 0;
@@ -21,7 +20,7 @@ $audio-player-size: 80px;
     height: $audio-player-size;
     box-sizing: border-box;
     background-color: darken($black, 10);
-
+    z-index: 1000;
 
     .playback-controls {
 

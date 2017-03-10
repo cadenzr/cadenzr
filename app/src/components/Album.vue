@@ -1,5 +1,5 @@
 <template>
-<table class="playlist">
+<table v-if="show" class="playlist">
     <thead>
         <tr>
             <th>#</th>
@@ -32,6 +32,7 @@
             data: function () {
                 return {
                     album: new Album(),
+                    show: false,
                 }
             },
             mounted () {
@@ -47,6 +48,7 @@
 
 
                       self.album.setSongs(data);
+                      self.show = true;
                   });
               },
               play: function(index){

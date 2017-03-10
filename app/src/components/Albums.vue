@@ -1,5 +1,5 @@
 <template>
-    <table class="albumlist">
+    <table v-if="show" class="albumlist">
         <thead>
             <tr>
                 <th>#</th>
@@ -33,7 +33,8 @@
     module.exports = {
             data: function () {
                 return {
-                    albums: []
+                    albums: [],
+                    show: false,
                 }
             },
             mounted () {
@@ -47,6 +48,8 @@
                             album.link = 'albums/' + album.id;
                             return new Album(album);
                         });
+
+                        self.show = true;
                   });
               }
             }

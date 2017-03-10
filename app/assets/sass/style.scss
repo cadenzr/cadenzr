@@ -15,7 +15,6 @@ $gray: rgba(205, 205, 205, 1);
 $color4: rgba(223, 248, 235, 1);
 $color5: rgba(1, 22, 56, 1);
 
-
 body {
     font-family: 'Open Sans', sans-serif;
     font-weight: 300;
@@ -27,7 +26,7 @@ body {
     background-color: $black;
 }
 
-
+@import "transitions";
 @import "table";
 @import "audio-player";
 

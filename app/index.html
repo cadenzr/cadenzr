@@ -21,7 +21,9 @@
             </div>
             
             <div class="pure-u-16-24">
-                <router-view></router-view>
+                <transition name="fade" mode="out-in">
+                    <router-view></router-view>
+                </transition>
             </div>
             
             <div class="pure-u-4-24">
