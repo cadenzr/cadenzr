@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -207,7 +209,28 @@ func corsHeader(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+type Config struct {
+	Hostname string `json:"hostname"`
+	Port     uint32 `json:"port"`
+}
+
+var config = Config{}
+
+func loadConfig() {
+	raw, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		log.WithFields(log.Fields{"reason": err.Error()}).Warn("Could not load config.json.")
+
+		config.Port = 8080
+		return
+	}
+
+	json.Unmarshal(raw, &config)
+}
+
 func main() {
+	loadConfig()
+
 	backend := NewBackend()
 	backend.Start()
 
@@ -252,5 +275,5 @@ func main() {
 		return c.File(filepath.Join(backend.path, song.Path))
 	})
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(config.Hostname + ":" + strconv.Itoa(int(config.Port))))
 }
