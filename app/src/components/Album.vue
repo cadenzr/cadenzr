@@ -53,13 +53,12 @@
             methods: {
               loadSongs: function(){
                   let self = this
-                  $.getJSON( "/albums/" + self.$route.params.id + "/songs", function(data) {
-                      data = _.map(data, (song) => {
+                  $.getJSON( "/albums/" + self.$route.params.id, function(data) {
+                      data.songs = _.map(data.songs, (song) => {
                           return new Song(song);
                       });
 
-
-                      self.album.setSongs(data);
+                      self.album = new Album(data);
                       self.show = true;
                   });
               },

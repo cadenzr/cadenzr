@@ -37,7 +37,7 @@ type Album struct {
 	Year string `json:"year"`
 	Path string `json:"-"`
 
-	Songs []*Song `json:"-"`
+	Songs []*Song `json:"songs"`
 }
 
 func (a *Album) GetSongs() []*Song {
@@ -225,16 +225,14 @@ func main() {
 		return c.JSON(http.StatusOK, albums)
 	})
 
-	e.GET("/albums/:id/songs", func(c echo.Context) error {
+	e.GET("/albums/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		album := backend.AlbumById(id)
 		if album == nil {
 			return c.NoContent(http.StatusNotFound)
 		}
 
-		songs := album.GetSongs()
-
-		return c.JSON(http.StatusOK, songs)
+		return c.JSON(http.StatusOK, album)
 	})
 
 	e.GET("/stream/songs/:id", func(c echo.Context) error {
