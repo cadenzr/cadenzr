@@ -1,24 +1,36 @@
 <template>
-<table v-if="show" class="playlist">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Title</th>
-            <th>Artist</th>
-            <th>Album</th>
-            <th>Year</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr v-for="(song, $index) in album.getSongs()" v-on:click="play($index)">
-            <td>{{$index+1}}</td>
-            <td>{{song.name}}</td>
-            <td>{{song.artist}}</td>
-            <td>{{song.album}}</td>
-            <td>{{song.year}}</td>
-        </tr>
-    </tbody>
-</table>
+<div>
+    <div class="album-meta">
+        <img src="http://www.interactivepixel.net/env/jhap2wp/data/default_artwork/music_ph.png">
+        <div class="album-meta-info">
+            <h1>Porta Euismod Nullam Pellentesque</h1>
+            <h2>Sit Commodo</h2>
+            <p>1994</p>
+        </div>
+    </div>
+    
+    <table v-if="show" class="playlist">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Album</th>
+                <th>Year</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="(song, $index) in album.getSongs()" v-on:click="play($index)">
+                <td>{{$index+1}}</td>
+                <td>{{song.name}}</td>
+                <td>{{song.artist}}</td>
+                <td>{{song.album}}</td>
+                <td>{{song.year}}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+</div>
 </template>
 
 <script>

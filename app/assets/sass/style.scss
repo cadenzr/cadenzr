@@ -19,7 +19,7 @@ body {
     font-family: 'Open Sans', sans-serif;
     font-weight: 300;
     font-size: 18px;
-    color: $black;
+    color: lighten($gray, 10);
     padding: 0;
     margin: 0;
     
@@ -46,4 +46,41 @@ li {
         color: inherit;
         text-decoration: none;
     }
+}
+
+.album-meta {
+    
+    vertical-align: middle;
+    
+    img {
+        height: 80px;
+        width: auto;
+        display: inline-block;
+    }
+    
+    .album-meta-info {
+        font-family: 'Open Sans', sans-serif;
+        display: inline-block;
+        
+        h1 {
+            font-size: 20px;
+            font-weight: 400;
+            margin: 0;
+        }
+        
+        h2 {
+            display: inline;
+            font-weight: 400;
+            font-size: 16px;
+            margin: 0;
+        }
+        p {
+            display: inline;
+            font-weight: 300;
+            font-size: 16px;
+            margin: 0;
+        }
+        
+    }
+    
 }
