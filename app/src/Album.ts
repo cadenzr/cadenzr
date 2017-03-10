@@ -1,3 +1,5 @@
+import * as _ from 'lodash';
+
 import {Provider} from './AudioPlayer';
 import Song from './Song';
 
@@ -8,7 +10,7 @@ class Album implements Provider {
         this.songs = [];
 
         if(data) {
-            (<any>Object).assign(this, data); 
+           _.assign(this, data);
         }
 
         this.currentIndex = 0;

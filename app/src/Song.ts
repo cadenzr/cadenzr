@@ -1,3 +1,5 @@
+import * as _ from 'lodash';
+
 import {Provider} from './AudioPlayer';
 
 class Song implements Provider {
@@ -13,7 +15,7 @@ class Song implements Provider {
 
     constructor(data: any) {
         if(data) {
-            (<any>Object).assign(this, data); 
+            _.assign(this, data);
         }
     }
 

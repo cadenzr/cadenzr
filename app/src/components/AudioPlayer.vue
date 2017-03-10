@@ -37,7 +37,7 @@
                 }
             },
             mounted: function () {
-                var self = this;
+                let self = this;
                 let isSeeking = false;
 
                 PubSub.subscribe(AudioPlayerEvents.SongChanged, (song) => {
