@@ -1,0 +1,162 @@
+/**
+ * Cadenzr audioplayer
+ * 
+ * Author: Mathias Beke
+ * Date: March 2017
+ */
+
+$audio-player-size: 80px;
+
+.audio-player-placeholder {
+    height: $audio-player-size;
+}
+
+.audio-player {
+
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: $audio-player-size;
+    box-sizing: border-box;
+    background-color: darken($black, 10);
+
+
+    .playback-controls {
+
+        $size: 40px;
+        padding-top: ($audio-player-size - ($size * 1.35))/2;
+
+        text-align: center;
+
+        a { 
+            font-size: 25px;
+
+            display: inline-block;
+            vertical-align: middle;
+
+            color: $orange;
+
+            width: $size;
+            height: $size;
+            text-align: center;
+            line-height: $size;
+            padding: 0;
+            margin: 0;
+
+            &.play,
+            &.pause {
+                $size: $size * 1.35;
+                font-size: 40px;
+                width: $size;
+                height: $size;
+                line-height: $size;
+            }
+
+        }
+
+
+    }
+
+    %slider {
+        $height: 5px;
+
+        -webkit-appearance: none;
+        margin-top: -$height;
+        height: $height;
+        background-color: $gray;
+        border-radius: $height/2 $height/2 0 0;
+
+        &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            display: block;
+            width: $height;
+            height: $height * 3;
+            background-color: $orange;
+
+        }
+    }
+
+    .current-song {
+
+        height: $audio-player-size;
+        background-color: darken($black, 6);
+        text-align: center;
+
+        .time-slider {
+            @extend %slider;
+        }
+
+
+        position: relative;
+
+        p {
+
+            position: absolute;
+            margin: 0;
+            padding: 0;
+            color: $orange;
+            font-family: 'Open Sans';
+            left: 0;
+            right: 0;
+
+            &.song {
+                font-weight: 600;
+                font-size: 20px;
+
+                padding-bottom: 1px;
+
+                bottom: $audio-player-size / 2;
+            }
+
+            &.artist {
+                font-weight: 400;
+                font-size: 16px;
+
+                padding-top: 1px;
+
+                top: $audio-player-size / 2;
+            }
+
+        }
+
+    }
+
+    .volume-controls {
+
+        font-size: 0;
+        position: relative;
+
+        .volume-slider {
+            @extend %slider;
+
+            background-color: $black;
+
+            $height: 12px;
+            position: absolute;
+            top: 50%;
+            left: 20%;
+            right: 20%;
+            margin-top: -$height/2;
+
+            height: $height;
+            border-radius: $height;
+
+            &::-webkit-slider-thumb {
+                height: $height;
+                width: $height*2;
+                border-radius: $height;
+
+                background-color: darken($orange,0);
+            }
+        }
+
+    }
+
+    audio {
+        display: none;
+    }
+
+
+}
