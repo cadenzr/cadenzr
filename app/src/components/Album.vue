@@ -1,5 +1,5 @@
 <template>
-<div>
+<div class="single-album">
     <div class="album-meta pure-g">
         <div class="album-meta-cover pure-u-4-24">
             <img :src="album.getSongs()[0].cover">

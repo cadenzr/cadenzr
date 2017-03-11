@@ -1,0 +1,92 @@
+/**
+ * Cadenzr album overview with album covers
+ * 
+ * Author: Mathias Beke
+ * Date: March 2017
+ */
+
+.albumlist {
+
+    padding-top: 1.25%;
+    padding-bottom: 1.25%;
+    padding-left: -1.25%;
+    padding-right: -1.25%;
+    margin: 0 -1.25%;
+
+
+    .album-container {
+        display: border-box;
+        padding: 5%;
+
+
+        .album {
+            width: 100%;
+            padding-top: 0;
+            box-sizing: border-box;
+            //float: left;
+            //background-size: cover;
+
+            .album-cover {
+                width: 100%;
+                padding-top: 100%;
+                box-sizing: border-box;
+                background-size: cover;
+                opacity: 0.85;
+                transition: 0.1s opacity ease;
+            }
+
+            &:hover .album-cover {
+                opacity: 1;
+                transition: 0.3s opacity ease;
+            }
+
+            .album-meta {
+                padding: 0.5em;
+                margin: 0;
+                background-color: darken($black, 2);
+                color: lighten($gray, 10);
+                text-decoration: none;
+                //position: absolute;
+                //top: 0;
+                //left: 0;
+                //right: 0;
+                //bottom: 0;
+
+                .album-meta-info {
+                    font-family: 'Open Sans', sans-serif;
+                    //box-sizing: border-box;
+                    display: flex;
+                    justify-content: center;
+                    align-items: left;
+                    flex-direction: column;
+
+                    h1 {
+                        font-size: 20px;
+                        font-weight: 400;
+                        margin: 0.1em 0;
+                    }
+
+                    h2 {
+                        font-weight: 400;
+                        font-size: 14px;
+                        margin: 0.1em 0;
+
+                        span {
+                            font-weight: 300;
+                            font-size: 14px;
+                            margin: 0;
+                            padding-left: 0.2em;
+                            color: darken($gray, 25);
+                        }
+
+                    }
+
+                }
+
+            }
+        }
+
+    }
+
+
+}
