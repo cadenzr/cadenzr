@@ -12,6 +12,15 @@ import * as CurrentQueueComponent from './components/CurrentQueue.vue';
 
 
 import './AudioPlayer';
+import Song from './Song';
+import {events as AudioPlayerEvents} from './AudioPlayer';
+
+import Notifier from './Notifier';
+import PubSub from './PubSub';
+
+PubSub.subscribe(AudioPlayerEvents.SongChanged, (song: Song) => {
+    Notifier.notify('Playing song: ' + song.name);
+});
 
 var router = new Router({
     routes: [
