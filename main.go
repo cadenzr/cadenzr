@@ -20,11 +20,11 @@ import (
 	id3v2 "github.com/mikkyang/id3-go/v2"
 )
 
-type JsonNullInt64 struct {
+type NullInt64 struct {
 	sql.NullInt64
 }
 
-func (v JsonNullInt64) MarshalJSON() ([]byte, error) {
+func (v NullInt64) MarshalJSON() ([]byte, error) {
 	if v.Valid {
 		return json.Marshal(v.Int64)
 	} else {
@@ -32,7 +32,7 @@ func (v JsonNullInt64) MarshalJSON() ([]byte, error) {
 	}
 }
 
-func (v *JsonNullInt64) UnmarshalJSON(data []byte) error {
+func (v *NullInt64) UnmarshalJSON(data []byte) error {
 	// Unmarshalling into a pointer will let us detect null
 	var x *int64
 	if err := json.Unmarshal(data, &x); err != nil {
@@ -47,11 +47,16 @@ func (v *JsonNullInt64) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type JsonNullString struct {
+func (v *NullInt64) Set(data int64) {
+	v.Int64 = data
+	v.Valid = true
+}
+
+type NullString struct {
 	sql.NullString
 }
 
-func (v JsonNullString) MarshalJSON() ([]byte, error) {
+func (v NullString) MarshalJSON() ([]byte, error) {
 	if v.Valid {
 		return json.Marshal(v.String)
 	} else {
@@ -59,7 +64,7 @@ func (v JsonNullString) MarshalJSON() ([]byte, error) {
 	}
 }
 
-func (v *JsonNullString) UnmarshalJSON(data []byte) error {
+func (v *NullString) UnmarshalJSON(data []byte) error {
 	// Unmarshalling into a pointer will let us detect null
 	var x *string
 	if err := json.Unmarshal(data, &x); err != nil {
@@ -74,16 +79,21 @@ func (v *JsonNullString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (v *NullString) Set(data string) {
+	v.String = data
+	v.Valid = true
+}
+
 type Song struct {
-	Id     uint32         `json:"id"`
-	Name   string         `json:"name"`
-	Artist JsonNullString `json:"artist"`
-	Album  JsonNullString `json:"album"`
-	Year   JsonNullInt64  `json:"year"`
-	Genre  JsonNullString `json:"genre"`
-	Mime   string         `json:"mime"`
-	Path   string         `json:"-"`
-	Cover  JsonNullInt64  `json:"cover"`
+	Id     uint32     `json:"id"`
+	Name   string     `json:"name"`
+	Artist NullString `json:"artist"`
+	Album  NullString `json:"album"`
+	Year   NullInt64  `json:"year"`
+	Genre  NullString `json:"genre"`
+	Mime   string     `json:"mime"`
+	Path   string     `json:"-"`
+	Cover  NullInt64  `json:"cover"`
 }
 
 type Album struct {
@@ -162,10 +172,13 @@ func (b *Backend) scanFilesystem() {
 		} else {
 			defer mp3File.Close()
 			s.Name = mp3File.Title()
-			s.Artist.Scan(mp3File.Artist())
-			s.Album.Scan(mp3File.Album())
-			s.Year.Scan(mp3File.Year())
-			s.Genre.Scan(mp3File.Genre())
+			s.Artist.Set(mp3File.Artist())
+			s.Album.Set(mp3File.Album())
+			year, err := strconv.Atoi(mp3File.Year())
+			if err == nil {
+				s.Year.Set(int64(year))
+			}
+			s.Genre.Set(mp3File.Genre())
 		}
 
 		insertArtist := "INSERT OR FAIL INTO `artists` (`name`) VALUES (?)"
