@@ -17,7 +17,7 @@
         </div>
         <div class="pure-u-16-24 current-song">
             <input ref="timeSlider" class="time-slider" type="range" style="width: 100%; display: block;" min="0" v-bind:max="duration">
-            <img ref="coverImage" class="cover"></img>
+            <img v-if="currentSong" class="cover" :src="currentSong.cover"></img>
             <p v-if="currentSong" class="song">{{currentSong.name}}</p>
             <p v-if="currentSong" class="artist">{{currentSong.artist}}</p>
         </div>
@@ -51,7 +51,6 @@
                 self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.SongChanged, (song) => {
                     self.currentSong = song;
                     self.duration = song.duration;
-                    self.$refs.coverImage.src = self.currentSong.cover;
                     self.$forceUpdate();
                 }));
 

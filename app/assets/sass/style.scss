@@ -29,9 +29,15 @@ body {
 @import "transitions";
 @import "table";
 @import "audio-player";
+@import "albums";
+@import "album";
 
 li {
     margin-top: 0.5em;
+}
+
+a {
+    text-decoration: none;
 }
 
 .playing {
@@ -42,57 +48,4 @@ li {
     tr {
         cursor: pointer;
     }
-}
-
-.albumlist {
-    a {
-        color: inherit;
-        text-decoration: none;
-    }
-}
-
-.album-meta {
-    
-    background-color: darken($black, 2);
-    
-    .album-meta-cover {
-        font-size: 0;
-        
-        img {
-            height: auto;
-            width: 100%;
-        }
-    }
-    
-    .album-meta-info {
-        font-family: 'Open Sans', sans-serif;
-        //box-sizing: border-box;
-        display: flex;
-        justify-content: center;
-        align-items: left;
-        flex-direction: column;
-        
-        h1 {
-            font-size: 24px;
-            font-weight: 400;
-            margin: 0.1em 20px;
-        }
-        
-        h2 {
-            font-weight: 400;
-            font-size: 16px;
-            margin: 0.1em 20px;
-            
-            span {
-                font-weight: 300;
-                font-size: 16px;
-                margin: 0;
-                padding-left: 0.2em;
-                color: darken($gray, 25);
-            }
-            
-        }
-        
-    }
-    
 }
