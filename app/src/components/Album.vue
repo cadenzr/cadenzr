@@ -1,6 +1,6 @@
 <template>
 <div>
-    <div class="album-meta pure-g">
+    <div v-if="show" class="album-meta pure-g">
         <div class="album-meta-cover pure-u-4-24">
             <img src="http://www.interactivepixel.net/env/jhap2wp/data/default_artwork/music_ph.png">
         </div>
@@ -15,14 +15,14 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Title</th>
-                <th>Artist</th>
-                <th>Album</th>
-                <th>Year</th>
+                <th><a v-on:click="toggleSort('name')">Title</a></th>
+                <th><a v-on:click="toggleSort('artist')">Artist</a></th>
+                <th><a v-on:click="toggleSort('album')">Album</a></th>
+                <th><a v-on:click="toggleSort('year')">Year</a></th>
             </tr>
         </thead>
         <tbody>
-            <tr v-for="(song, $index) in album.getSongs()" v-on:click="play($index)" v-bind:class="{ playing: AudioPlayer.isCurrentSong(song) }">
+            <tr v-for="(song, $index) in sortedSongs" v-on:click="play($index)" v-bind:class="{ playing: AudioPlayer.isCurrentSong(song) }">
                 <td>{{$index+1}}</td>
                 <td>{{song.name}}</td>
                 <td>{{song.artist}}</td>
@@ -48,12 +48,27 @@
                     album: new Album(),
                     show: false,
                     AudioPlayer: AudioPlayer,
+                    sortOrder: 'asc',
+                    sortKey: 'name',
+                }
+            },
+            computed: {
+                sortedSongs: function() {
+                    return _.orderBy(this.album.getSongs(), [this.sortKey], [this.sortOrder]);
                 }
             },
             mounted () {
                 this.loadSongs();
             },
             methods: {
+                toggleSort: function(key) {
+                    this.sortKey = key;
+                    if(this.sortOrder === 'asc') {
+                        this.sortOrder = 'desc';
+                    } else {
+                        this.sortOrder = 'asc';
+                    }
+                },
               loadSongs: function(){
                   let self = this
                   $.getJSON( "/albums/" + self.$route.params.id, function(data) {

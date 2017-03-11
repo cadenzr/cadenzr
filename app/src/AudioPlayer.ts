@@ -190,7 +190,7 @@ class AudioPlayer {
             };
         });
 
-        self.audioEl.src = s.stream_location;
+        self.audioEl.src = 'songs/' + s.id + '/stream';
         self.audioEl.load(); // Required so events are being generated.
 
         return p;

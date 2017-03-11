@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"mime"
@@ -14,28 +15,78 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/labstack/echo"
+	_ "github.com/mattn/go-sqlite3"
 	id3 "github.com/mikkyang/id3-go"
 	id3v2 "github.com/mikkyang/id3-go/v2"
 )
 
-type Song struct {
-	lock sync.RWMutex
+type JsonNullInt64 struct {
+	sql.NullInt64
+}
 
-	Id             uint32 `json:"id"`
-	Name           string `json:"name"`
-	Artist         string `json:"artist"`
-	Album          string `json:"album"`
-	Year           string `json:"year"`
-	Genre          string `json:"genre"`
-	Mime           string `json:"mime"`
-	Path           string `json:"-"`
-	StreamLocation string `json:"stream_location"`
-	Cover          string `json:"cover"`
+func (v JsonNullInt64) MarshalJSON() ([]byte, error) {
+	if v.Valid {
+		return json.Marshal(v.Int64)
+	} else {
+		return json.Marshal(nil)
+	}
+}
+
+func (v *JsonNullInt64) UnmarshalJSON(data []byte) error {
+	// Unmarshalling into a pointer will let us detect null
+	var x *int64
+	if err := json.Unmarshal(data, &x); err != nil {
+		return err
+	}
+	if x != nil {
+		v.Valid = true
+		v.Int64 = *x
+	} else {
+		v.Valid = false
+	}
+	return nil
+}
+
+type JsonNullString struct {
+	sql.NullString
+}
+
+func (v JsonNullString) MarshalJSON() ([]byte, error) {
+	if v.Valid {
+		return json.Marshal(v.String)
+	} else {
+		return json.Marshal(nil)
+	}
+}
+
+func (v *JsonNullString) UnmarshalJSON(data []byte) error {
+	// Unmarshalling into a pointer will let us detect null
+	var x *string
+	if err := json.Unmarshal(data, &x); err != nil {
+		return err
+	}
+	if x != nil {
+		v.Valid = true
+		v.String = *x
+	} else {
+		v.Valid = false
+	}
+	return nil
+}
+
+type Song struct {
+	Id     uint32         `json:"id"`
+	Name   string         `json:"name"`
+	Artist JsonNullString `json:"artist"`
+	Album  JsonNullString `json:"album"`
+	Year   JsonNullInt64  `json:"year"`
+	Genre  JsonNullString `json:"genre"`
+	Mime   string         `json:"mime"`
+	Path   string         `json:"-"`
+	Cover  JsonNullInt64  `json:"cover"`
 }
 
 type Album struct {
-	lock sync.RWMutex
-
 	Id   uint32 `json:"id"`
 	Name string `json:"name"`
 	Year string `json:"year"`
@@ -45,8 +96,6 @@ type Album struct {
 }
 
 func (a *Album) GetSongs() []*Song {
-	a.lock.RLock()
-	defer a.lock.RUnlock()
 
 	songs := []*Song{}
 	for _, song := range a.Songs {
@@ -101,12 +150,10 @@ func (b *Backend) scanFilesystem() {
 
 		_, file := filepath.Split(path)
 		s := &Song{
-			Id:             b.nextSongId,
-			Name:           file,
-			Mime:           mimeType,
-			Path:           path,
-			StreamLocation: "/stream/songs/" + strconv.Itoa(int(b.nextSongId)),
-			Cover:          "/songs/" + strconv.Itoa(int(b.nextSongId)) + "/cover",
+			Id:   b.nextSongId,
+			Name: file,
+			Mime: mimeType,
+			Path: path,
 		}
 
 		mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
@@ -115,33 +162,58 @@ func (b *Backend) scanFilesystem() {
 		} else {
 			defer mp3File.Close()
 			s.Name = mp3File.Title()
-			s.Artist = mp3File.Artist()
-			s.Album = mp3File.Album()
-			s.Year = mp3File.Year()
-			s.Genre = mp3File.Genre()
+			s.Artist.Scan(mp3File.Artist())
+			s.Album.Scan(mp3File.Album())
+			s.Year.Scan(mp3File.Year())
+			s.Genre.Scan(mp3File.Genre())
 		}
 
-		b.nextSongId++
-		b.songs[s.Id] = s
-
-		//albumName := dir[strings.LastIndexFunc(dir[:len(dir)-1], func(r rune) bool { return r == filepath.Separator })+1 : len(dir)-1]
-		//albumName := s.Album
-		album := b.albumByName(s.Album)
-		if album == nil {
-			album = &Album{
-				Id:   b.nextAlbumId,
-				Name: s.Album,
-				Year: s.Year,
-				Path: path,
+		insertArtist := "INSERT OR FAIL INTO `artists` (`name`) VALUES (?)"
+		artistId := int64(0)
+		if len(mp3File.Artist()) > 0 {
+			err := db.QueryRow("SELECT `id` FROM `artists` WHERE `name` = ?", mp3File.Artist()).Scan(&artistId)
+			if err != nil {
+				r, err := db.Exec(insertArtist, mp3File.Artist())
+				if err != nil {
+					log.WithFields(log.Fields{"reason": err.Error(), "artist": mp3File.Artist()}).Error("Failed to insert artist.")
+				} else {
+					artistId, _ = r.LastInsertId()
+				}
 			}
-			b.nextAlbumId++
-
-			b.albums[album.Id] = album
-			log.WithFields(log.Fields{"name": album.Name}).Info("Created new album.")
 		}
 
-		album.Songs = append(album.Songs, s)
-		log.WithFields(log.Fields{"name": s.Name, "album": album.Name}).Info("Added song.")
+		insertAlbum := "INSERT OR FAIL INTO `albums` (`name`) VALUES (?)"
+		albumId := int64(0)
+		if len(mp3File.Album()) > 0 {
+			err := db.QueryRow("SELECT `id` FROM `albums` WHERE `name` = ?", mp3File.Album()).Scan(&albumId)
+			if err != nil {
+				r, err := db.Exec(insertAlbum, mp3File.Album())
+				if err != nil {
+					log.WithFields(log.Fields{"reason": err.Error(), "album": mp3File.Album()}).Error("Failed to insert album.")
+				} else {
+					albumId, _ = r.LastInsertId()
+				}
+			}
+		}
+
+		insertSong := "INSERT OR IGNORE INTO `songs` (`name`, `artist_id`, `album_id`, `year`, `genre`, `mime`, `path`, `cover_id`) VALUES (?,?,?,?,?,?,?,?)"
+		songValues := [9]interface{}{}
+		songValues[0] = s.Name
+		if artistId != 0 {
+			songValues[1] = artistId
+		}
+		if albumId != 0 {
+			songValues[2] = albumId
+		}
+		songValues[3] = s.Year
+		songValues[4] = s.Genre
+		songValues[5] = s.Mime
+		songValues[6] = s.Path
+
+		_, err = db.Exec(insertSong, songValues[:]...)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name, "artist": artistId, "album": albumId}).Error("Failed to insert song.")
+		}
 
 		return nil
 	})
@@ -231,8 +303,77 @@ func loadConfig() {
 	json.Unmarshal(raw, &config)
 }
 
+var db *sql.DB
+
+func createSchema() {
+	schema, err := ioutil.ReadFile("./schema.sql")
+	if err != nil {
+		panic("Could not load schema file: " + err.Error())
+	}
+
+	_, err = db.Exec(string(schema))
+	if err != nil {
+		panic("Failed to create schema: " + err.Error())
+	}
+
+	log.Info("Schema created.")
+}
+
+func loadDatabase() {
+	os.Remove("./db.sqlite")
+	var err error
+	db, err = sql.Open("sqlite3", "./db.sqlite")
+	if err != nil {
+		panic("Could not open database: " + err.Error())
+	}
+
+	createSchema()
+}
+
+func getSong(id uint32) (*Song, error) {
+	song := &Song{}
+
+	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `songs`.`cover_id` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` WHERE `songs`.`id` = ?"
+	err := db.QueryRow(query, id).Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Year, &song.Genre, &song.Mime, &song.Path, &song.Cover)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, nil
+	case err != nil:
+		log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not select songs for album.")
+		return nil, err
+	}
+
+	return song, nil
+}
+
+func getAlbumSongs(id uint32) ([]*Song, error) {
+	songs := []*Song{}
+
+	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `songs`.`cover_id` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` WHERE `songs`.`album_id` = ?"
+	rows, err := db.Query(query, id)
+	if err != nil {
+		log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not select songs for album.")
+		return songs, err
+	}
+
+	for rows.Next() {
+		song := &Song{}
+
+		err := rows.Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Year, &song.Genre, &song.Mime, &song.Path, &song.Cover)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan song.")
+			return songs, err
+		}
+
+		songs = append(songs, song)
+	}
+
+	return songs, nil
+}
+
 func main() {
 	loadConfig()
+	loadDatabase()
 
 	backend := NewBackend()
 	backend.Start()
@@ -247,34 +388,59 @@ func main() {
 	})
 
 	e.GET("/albums", func(c echo.Context) error {
-		albums := backend.Albums()
+		rows, err := db.Query("SELECT `id`, `name` FROM `albums`")
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not fetch albums.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		albums := []Album{}
+
+		for rows.Next() {
+			var album Album
+			if err := rows.Scan(&album.Id, &album.Name); err != nil {
+				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
+				return c.NoContent(http.StatusInternalServerError)
+			}
+
+			albums = append(albums, album)
+		}
+
 		return c.JSON(http.StatusOK, albums)
 	})
 
 	e.GET("/albums/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
-		album := backend.AlbumById(id)
-		if album == nil {
+
+		var album Album
+		err := db.QueryRow("SELECT `id`, `name` FROM `albums` WHERE `id` = ?", id).Scan(&album.Id, &album.Name)
+		switch {
+		case err == sql.ErrNoRows:
+			log.WithFields(log.Fields{"album": id}).Error("Album not found.")
 			return c.NoContent(http.StatusNotFound)
+		case err != nil:
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		album.Songs, err = getAlbumSongs(album.Id)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
 		}
 
 		return c.JSON(http.StatusOK, album)
 	})
 
-	e.GET("/stream/songs/:id", func(c echo.Context) error {
+	e.GET("/songs/:id/stream", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
-		song := backend.SongById(id)
+		song, err := getSong(id)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
 		if song == nil {
 			return c.NoContent(http.StatusNotFound)
 		}
 
-		/*contents, err := os.Open(filepath.Join(backend.path, song.Path))
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "song": song.Id}).Error("Could not open song for streaming.")
-			return c.NoContent(http.StatusInternalServerError)
-		}*/
-
-		//c.Response().Header().Add("Accept-Ranges", "bytes") // Allow seeking.
 		return c.File(filepath.Join(backend.path, song.Path))
 	})
 
