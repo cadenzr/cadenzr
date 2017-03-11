@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"io/ioutil"
@@ -174,9 +175,12 @@ func (b *Backend) scanFilesystem() {
 			s.Name = mp3File.Title()
 			s.Artist.Set(mp3File.Artist())
 			s.Album.Set(mp3File.Album())
-			year, err := strconv.Atoi(mp3File.Year())
+			yearRaw := string(bytes.Trim([]byte(mp3File.Year()), "\x00"))
+			year, err := strconv.Atoi(yearRaw)
 			if err == nil {
 				s.Year.Set(int64(year))
+			} else {
+				log.Println(err.Error())
 			}
 			s.Genre.Set(mp3File.Genre())
 		}
