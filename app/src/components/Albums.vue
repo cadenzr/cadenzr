@@ -4,46 +4,19 @@
             <div class="album-container">
                 <router-link :to="{ path: album.link }">
                     <div class="album">
-                        <div class="album-cover" :style="{ 'background-image': 'url(' + album.getSongs()[0].cover + ')' }">
+                        <div class="album-cover" :style="{ 'background-image': 'url(' + album.getCover() + ')' }">
                             
                         </div>
                         <div class="album-meta">
                             <div class="album-meta-info pure-u-20-24">
                                 <h1>{{album.name}}</h1>
-                                <h2>{{album.getSongs()[0].artist}} <span>{{album.year}}</span></h2>
+                                <h2>{{album.getArtist()}} <span>{{album.year}}</span></h2>
                             </div>
                         </div>
                     </div>
                 </router-link>
             </div>
-        </div>
-        
-        <!--<table v-if="show" class="albumlist">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Album</th>
-                    <th>Year</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(album, $index) in albums">
-                    
-                    <td>
-                        <router-link :to="{ path: album.link }">{{$index+1}}</router-link>
-                    </td>
-                    <td>
-                        <router-link :to="{ path: album.link }">{{album.name}}</router-link>
-                    </td>
-                    <td>
-                        <router-link :to="{ path: album.link }">{{album.year}}</router-link>
-                    </td>
-                </tr>
->>>>>>> master
-                
-            </tbody>
-        </table>-->
-        
+        </div>        
     </div>
    
 </template>

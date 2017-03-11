@@ -5,6 +5,7 @@ import Song from './Song';
 
 class Album implements Provider {
     songs: Array<Song>;
+    cover: string;
 
     constructor(data: any) {
         this.songs = [];
@@ -28,6 +29,26 @@ class Album implements Provider {
 
     getSongs() : Array<Song> {
         return this.songs;
+    }
+
+    getArtist() : string {
+        if(this.songs.length === 0) {
+            return '';
+        }
+
+        if(this.songs[0].artist) {
+            return this.songs[0].artist;
+        }
+
+        return '';
+    }
+
+    getCover() : string {
+        if(!this.cover) {
+            return '';
+        }
+
+        return this.cover;
     }
 
     nextSong() : Song {

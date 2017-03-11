@@ -12,6 +12,9 @@ import (
 	"strings"
 	"sync"
 
+	"crypto/md5"
+	"encoding/hex"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/labstack/echo"
@@ -93,16 +96,16 @@ type Song struct {
 	Genre  NullString `json:"genre"`
 	Mime   string     `json:"mime"`
 	Path   string     `json:"-"`
-	Cover  NullInt64  `json:"cover"`
+	Cover  NullString `json:"cover"`
 }
 
 type Album struct {
-	Id   uint32 `json:"id"`
-	Name string `json:"name"`
-	Year string `json:"year"`
-	Path string `json:"-"`
-
-	Songs []*Song `json:"songs"`
+	Id    uint32     `json:"id"`
+	Name  string     `json:"name"`
+	Year  string     `json:"year"`
+	Path  string     `json:"-"`
+	Cover NullString `json:"cover"`
+	Songs []*Song    `json:"songs"`
 }
 
 func (a *Album) GetSongs() []*Song {
@@ -197,8 +200,9 @@ func (b *Backend) scanFilesystem() {
 
 		insertAlbum := "INSERT OR FAIL INTO `albums` (`name`) VALUES (?)"
 		albumId := int64(0)
+		albumCover := NullInt64{}
 		if len(mp3File.Album()) > 0 {
-			err := db.QueryRow("SELECT `id` FROM `albums` WHERE `name` = ?", mp3File.Album()).Scan(&albumId)
+			err := db.QueryRow("SELECT `id`, `cover_id` FROM `albums` WHERE `name` = ?", mp3File.Album()).Scan(&albumId, &albumCover)
 			if err != nil {
 				r, err := db.Exec(insertAlbum, mp3File.Album())
 				if err != nil {
@@ -223,9 +227,53 @@ func (b *Backend) scanFilesystem() {
 		songValues[5] = s.Mime
 		songValues[6] = s.Path
 
-		_, err = db.Exec(insertSong, songValues[:]...)
+		r, err := db.Exec(insertSong, songValues[:]...)
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name, "artist": artistId, "album": albumId}).Error("Failed to insert song.")
+		} else {
+			songId, _ := r.LastInsertId()
+
+			apic := mp3File.Frame("APIC")
+			if apic != nil {
+
+				imgData := (apic.(*id3v2.ImageFrame)).Data()
+				hash := md5.Sum(imgData)
+				hashString := hex.EncodeToString(hash[:])
+				extensions, _ := mime.ExtensionsByType((apic.(*id3v2.ImageFrame)).MIMEType())
+				extension := ""
+				if extensions != nil && len(extensions) > 0 {
+					extension = extensions[0]
+				}
+
+				path := "images/" + strconv.Itoa(int(songId)) + extension
+
+				coverId := int64(0)
+				err = db.QueryRow("SELECT `id` FROM `images` WHERE `hash` = ?", hashString).Scan(&coverId)
+				if err != nil {
+					err := ioutil.WriteFile(path, imgData, 0666)
+					if err != nil {
+						log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to write cover to disk.")
+					} else {
+						r, err := db.Exec("INSERT INTO `images` (`path`, `link`, `mime`, `hash`) VALUES (?,?,?,?)", path, path, (apic.(*id3v2.ImageFrame)).MIMEType(), hashString)
+						if err != nil {
+							log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to insert cover.")
+						} else {
+							coverId, _ = r.LastInsertId()
+						}
+					}
+				}
+				if coverId != 0 {
+					if _, err := db.Exec("UPDATE `songs` SET `cover_id` = ? WHERE `id` = ?", coverId, songId); err != nil {
+						log.WithFields(log.Fields{"reason": err.Error(), "song": songId, "cover": coverId}).Error("Failed to set cover for song.")
+					}
+
+					if !albumCover.Valid {
+						if _, err := db.Exec("UPDATE `albums` SET `cover_id` = ? WHERE `id` = ?", coverId, albumId); err != nil {
+							log.WithFields(log.Fields{"reason": err.Error(), "album": albumId, "cover": coverId}).Error("Failed to set cover for album.")
+						}
+					}
+				}
+			}
 		}
 
 		return nil
@@ -346,7 +394,7 @@ func loadDatabase() {
 func getSong(id uint32) (*Song, error) {
 	song := &Song{}
 
-	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `songs`.`cover_id` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` WHERE `songs`.`id` = ?"
+	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `images`.`link` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` JOIN `images` ON `songs`.`cover_id` = `images`.`id` WHERE `songs`.`id` = ?"
 	err := db.QueryRow(query, id).Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Year, &song.Genre, &song.Mime, &song.Path, &song.Cover)
 	switch {
 	case err == sql.ErrNoRows:
@@ -362,7 +410,7 @@ func getSong(id uint32) (*Song, error) {
 func getAlbumSongs(id uint32) ([]*Song, error) {
 	songs := []*Song{}
 
-	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `songs`.`cover_id` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` WHERE `songs`.`album_id` = ?"
+	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `images`.`link` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` JOIN `images` ON `songs`.`cover_id` = `images`.`id` WHERE `songs`.`album_id` = ?"
 	rows, err := db.Query(query, id)
 	if err != nil {
 		log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not select songs for album.")
@@ -395,13 +443,14 @@ func main() {
 	e.Use(corsHeader)
 
 	e.Static("/app", "app/dist")
+	e.Static("/images", "images")
 
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
 	e.GET("/albums", func(c echo.Context) error {
-		rows, err := db.Query("SELECT `id`, `name` FROM `albums`")
+		rows, err := db.Query("SELECT `albums`.`id`, `albums`.`name`, `images`.`link` FROM `albums` JOIN `images` ON `albums`.`cover_id` = `images`.`id`")
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not fetch albums.")
 			return c.NoContent(http.StatusInternalServerError)
@@ -411,11 +460,15 @@ func main() {
 
 		for rows.Next() {
 			var album Album
-			if err := rows.Scan(&album.Id, &album.Name); err != nil {
+			if err := rows.Scan(&album.Id, &album.Name, &album.Cover); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 				return c.NoContent(http.StatusInternalServerError)
 			}
 
+			album.Songs, err = getAlbumSongs(album.Id)
+			if err != nil {
+				return c.NoContent(http.StatusInternalServerError)
+			}
 			albums = append(albums, album)
 		}
 
@@ -455,31 +508,6 @@ func main() {
 		}
 
 		return c.File(filepath.Join(backend.path, song.Path))
-	})
-
-	e.GET("/songs/:id/cover", func(c echo.Context) error {
-		id := parseUint32(c.Param("id"), 0)
-		song := backend.SongById(id)
-		if song == nil {
-			return c.NoContent(http.StatusNotFound)
-		}
-
-		mp3File, err := id3.Open("./media/" + song.Path)
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "song": song.Id}).Info("Couldn't parse id3 tags to get cover art.")
-			return c.NoContent(http.StatusNoContent)
-		}
-
-		apicFrames := mp3File.Frames("APIC")
-		if len(apicFrames) == 0 {
-			log.WithFields(log.Fields{"song": song.Id}).Info("Couldn't find APIC frame to get cover art.")
-			return c.NoContent(http.StatusNoContent)
-		}
-		apicFrame := apicFrames[0].(*id3v2.ImageFrame)
-		log.WithFields(log.Fields{"song": song.Id, "mime": apicFrame.MIMEType()}).Info("Found cover art.")
-
-		// TODO: mime shouldn't be hardcoded.
-		return c.Blob(http.StatusOK, apicFrame.MIMEType(), apicFrame.Data())
 	})
 
 	e.Logger.Fatal(e.Start(config.Hostname + ":" + strconv.Itoa(int(config.Port))))

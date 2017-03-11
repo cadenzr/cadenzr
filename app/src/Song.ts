@@ -12,6 +12,7 @@ class Song implements Provider {
     stream_location: string;
     year: number;
     duration: number;
+    cover: string;
 
     constructor(data: any) {
         if(data) {
