@@ -2,7 +2,7 @@
 <div>
     <div class="album-meta pure-g">
         <div class="album-meta-cover pure-u-4-24">
-            <img src="http://www.interactivepixel.net/env/jhap2wp/data/default_artwork/music_ph.png">
+            <img :src="album.getSongs()[0].cover">
         </div>
         
         <div class="album-meta-info pure-u-20-24">
