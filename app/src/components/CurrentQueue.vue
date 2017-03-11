@@ -1,16 +1,5 @@
 <template>
-<div>
-    <div v-if="show" class="album-meta pure-g">
-        <div class="album-meta-cover pure-u-4-24">
-            <img src="http://www.interactivepixel.net/env/jhap2wp/data/default_artwork/music_ph.png">
-        </div>
-        
-        <div class="album-meta-info pure-u-20-24">
-            <h1>{{album.name}}</h1>
-            <h2>{{album.getSongs()[0].artist}} <span>{{album.year}}</span></h2>
-        </div>
-    </div>
-    
+<div>    
     <table v-if="show" class="playlist">
         <thead>
             <tr>
@@ -39,26 +28,44 @@
     let $ = require('jquery');
     let _ = require('lodash');
     let Song = require('./../Song').default;
-    let Album = require('./../Album').default;
+    let PubSub = require('./../PubSub').default;
     let AudioPlayer = require('./../AudioPlayer').default;
+    let AudioPlayerEvents = require('./../AudioPlayer').events;
 
     module.exports = {
             data: function () {
                 return {
-                    album: new Album(),
+                    queue: AudioPlayer.getQueue(),
                     show: false,
                     AudioPlayer: AudioPlayer,
                     sortOrder: 'asc',
                     sortKey: 'name',
+                    subscriptions: [],
                 }
             },
             computed: {
                 sortedSongs: function() {
-                    return _.orderBy(this.album.getSongs(), [this.sortKey], [this.sortOrder]);
+                    return _.orderBy(this.queue, [this.sortKey], [this.sortOrder]);
                 }
             },
             mounted () {
-                this.loadSongs();
+                let self = this;
+
+                self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.QueueChanged, (queue) => {
+                    self.queue = queue;
+                    self.$forceUpdate();
+                }));
+
+                self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.SongChanged, (song) => {
+                    self.$forceUpdate();
+                }));
+
+                self.show = true;
+            },
+            beforeDestroy () {
+                _.forEach(this.subscriptions, (s) => {
+                    PubSub.unsubscribe(s);
+                });
             },
             methods: {
                 toggleSort: function(key) {
@@ -69,24 +76,11 @@
                         this.sortOrder = 'asc';
                     }
                 },
-              loadSongs: function(){
-                  let self = this
-                  $.getJSON( "/albums/" + self.$route.params.id, function(data) {
-                      data.songs = _.map(data.songs, (song) => {
-                          return new Song(song);
-                      });
-
-                      self.album = new Album(data);
-                      self.show = true;
-                  });
-              },
               play: function(song){
-                  // Assume that if user plays a song in this album he wants to play the whole album.
-                  AudioPlayer.setQueue(this.album.getSongs());
-                  AudioPlayer.setCurrentSong(song);
-                  AudioPlayer.reload()
+                  this.AudioPlayer.setCurrentSong(song);
+                  this.AudioPlayer.reload()
                   .then(() => {
-                      AudioPlayer.play();
+                      this.AudioPlayer.play();
                   });
               }
             }

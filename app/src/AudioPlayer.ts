@@ -1,4 +1,5 @@
 import {Promise} from 'es6-promise';
+import * as _ from 'lodash';
 
 import Song from './Song';
 import PubSub from './PubSub';
@@ -9,6 +10,7 @@ let events = {
     TimeChanged: 'AudioPlayer:time-changed',
     Play: 'AudioPlayer:Play',
     Pause: 'AudioPlayer:pause',
+    QueueChanged: 'AudioPlayer:QueueChanged'
 };
 
 interface Provider {
@@ -36,6 +38,8 @@ class AudioPlayer {
         let self = this;
 
         this.provider = new NullProvider();
+        this.currentQueue = [];
+        this.currentIndex = null;
 
         this.audioEl = document.createElement('audio');
         this.audioEl.style.display = 'none';
@@ -57,7 +61,11 @@ class AudioPlayer {
      * Get the current playing song.
      */
     currentSong() : Song {
-        return this.provider.currentSong();
+        if(this.currentIndex === null) {
+            return null;
+        }
+
+        return this.currentQueue[this.currentIndex];
     }
 
     /**
@@ -94,49 +102,65 @@ class AudioPlayer {
     }
 
     next() : Promise<void> {
-        let s = this.provider.nextSong();
-        if(s == null) {
-            return;
+        if(this.currentIndex === null) {
+            return Promise.resolve();
         }
 
-        return this.loadSong(s, true)
+        this.currentIndex++;
+        if(this.currentIndex >= this.currentQueue.length) {
+            this.currentIndex = 0;
+        }
+
+        return this.reload()
         .then(() => {
             this.play();
         });
-
     }
 
     prev() : Promise<void> {
-        let s = this.provider.prevSong();
-        if(s == null) {
-            return;
+        if(this.currentIndex === null) {
+            return Promise.resolve();
         }
 
-        return this.loadSong(s, true)
+        this.currentIndex--;
+        if(this.currentIndex < 0) {
+            this.currentIndex = this.currentQueue.length-1;
+        }
+
+        return this.reload()
         .then(() => {
             this.play();
         });
     }
 
-    /**
-     * Force a refetch of the current song from the provider.
-     * Useful if the user wants to play a song in an album for example.
-     */
-    restartCurrent() : Promise<void> {
-        let s = this.provider.currentSong();
-        if(s == null) {
-            return;
+    setQueue(queue: Array<Song>) {
+        this.currentQueue = queue;
+        if(this.currentQueue.length === 0) {
+            this.currentIndex = null;
+        } else {
+            this.currentIndex = 0;
         }
 
-        return this.loadSong(s, true);
+        PubSub.publish(events.QueueChanged, this.currentQueue);
+    }
+
+    getQueue() : Array<Song> {
+        return this.currentQueue;
     }
 
     /**
+     * Set the current song. Does not yet start playing.
+     * The song should be in the queue.
      * 
-     * @param p 
+     * @param s 
      */
-    setProvider(p: Provider) {
-        this.provider = p;
+    setCurrentSong(s: Song) {
+        let index = _.findIndex(this.currentQueue, (s2) => { return s2.id === s.id; });
+        if(index === -1) {
+            return Promise.resolve();
+        }
+
+        this.currentIndex = index;
     }
 
     /**
@@ -175,6 +199,15 @@ class AudioPlayer {
         return this.audioEl.volume * 100;
     }
 
+    reload() : Promise<void> {
+        if(this.currentIndex === null) {
+            return Promise.resolve();
+        }
+
+        let s = this.currentSong()
+        return this.loadSong(s, true);
+    }
+
     private loadSong(s: Song, publish: boolean) : Promise<any> {
         var self = this;
 
@@ -198,6 +231,8 @@ class AudioPlayer {
 
     private audioEl: HTMLMediaElement
     private provider: Provider;
+    private currentQueue: Array<Song>;
+    private currentIndex: number;
 }
 
 export {events};

@@ -41,20 +41,21 @@
                     currentTime: 0,
                     duration: 0,
                     currentSong: null,
+                    subscriptions: [],
                 }
             },
             mounted: function () {
                 let self = this;
                 let isSeeking = false;
 
-                PubSub.subscribe(AudioPlayerEvents.SongChanged, (song) => {
+                self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.SongChanged, (song) => {
                     self.currentSong = song;
                     self.duration = song.duration;
                     self.$refs.coverImage.src = self.currentSong.cover;
                     self.$forceUpdate();
-                });
+                }));
 
-                PubSub.subscribe(AudioPlayerEvents.TimeChanged, (time) => {
+                self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.TimeChanged, (time) => {
                     if(isSeeking) {
                         // Just return so the slider does not jump back.
                         return;
@@ -62,22 +63,22 @@
 
                     self.currentTime = time;
                     self.$refs.timeSlider.value = self.currentTime;          
-                });
+                }));
 
-                PubSub.subscribe(AudioPlayerEvents.Pause, () => {
+                self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.Pause, () => {
                     self.playing = false;
                     self.$forceUpdate(); 
-                });
+                }));
 
-                PubSub.subscribe(AudioPlayerEvents.Play, () => {
+                self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.Play, () => {
                     self.playing = true;
                     self.$forceUpdate(); 
-                });
+                }));
 
-                PubSub.subscribe(AudioPlayerEvents.VolumeChanged, (volume) => {
+                self.subscriptions.push(PubSub.subscribe(AudioPlayerEvents.VolumeChanged, (volume) => {
                     self.volume = volume;
                     self.$forceUpdate(); 
-                });
+                }));
 
                 self.$watch('volume', () => {
                     AudioPlayer.setVolume(self.volume);
@@ -92,6 +93,11 @@
                     AudioPlayer.seek(self.$refs.timeSlider.value);
                 });
 
+            },
+            beforeDestroy () {
+                _.forEach(this.subscriptions, (s) => {
+                    PubSub.unsubscribe(s);
+                });
             },
             methods: {
                 next: function() {
