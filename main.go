@@ -199,12 +199,12 @@ func (b *Backend) scanFilesystem() {
 			}
 		}
 
-		insertAlbum := "INSERT OR FAIL INTO `albums` (`name`) VALUES (?)"
+		insertAlbum := "INSERT OR FAIL INTO `albums` (`name`, `year`) VALUES (?, ?)"
 		albumId := int64(0)
 		if len(mp3File.Album()) > 0 {
 			err := db.QueryRow("SELECT `id` FROM `albums` WHERE `name` = ?", mp3File.Album()).Scan(&albumId)
 			if err != nil {
-				r, err := db.Exec(insertAlbum, mp3File.Album())
+				r, err := db.Exec(insertAlbum, mp3File.Album(), s.Year)
 				if err != nil {
 					log.WithFields(log.Fields{"reason": err.Error(), "album": mp3File.Album()}).Error("Failed to insert album.")
 				} else {
@@ -405,7 +405,7 @@ func main() {
 	})
 
 	e.GET("/albums", func(c echo.Context) error {
-		rows, err := db.Query("SELECT `id`, `name` FROM `albums`")
+		rows, err := db.Query("SELECT `id`, `name`, `year` FROM `albums`")
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not fetch albums.")
 			return c.NoContent(http.StatusInternalServerError)
@@ -415,7 +415,7 @@ func main() {
 
 		for rows.Next() {
 			var album Album
-			if err := rows.Scan(&album.Id, &album.Name); err != nil {
+			if err := rows.Scan(&album.Id, &album.Name, &album.Year); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 				return c.NoContent(http.StatusInternalServerError)
 			}
