@@ -236,7 +236,7 @@ func update(table string, v interface{}, where map[string]interface{}) error {
 	SET ` + strings.Join(columns, ",") + `
 	WHERE ` + strings.Join(wheres, " AND ") + `
 	`
-	log.Info(query)
+	log.Debug(query)
 
 	_, err := db.Exec(query, values...)
 	if err != nil {
@@ -257,7 +257,7 @@ func insert(table string, v interface{}) error {
 	INSERT INTO "` + table + `" (` + strings.Join(columns, ",") + `)
 	VALUES (` + strings.Join(strings.Split(strings.Repeat("?", len(columns)), ""), ",") + `)
 	`
-	log.Info(query)
+	log.Debug(query)
 
 	r, err := db.Exec(query, values...)
 	if err != nil {
@@ -286,7 +286,7 @@ func find(table string, v interface{}, where map[string]interface{}) (bool, erro
 	}
 
 	query := `SELECT ` + strings.Join(columns, ",") + ` FROM "` + table + `" WHERE ` + strings.Join(wheres, " AND ")
-	log.Info(query)
+	log.Debug(query)
 
 	var err error
 	if underLyingType.Kind() == reflect.Slice || underLyingType.Kind() == reflect.Array {
@@ -299,7 +299,7 @@ func find(table string, v interface{}, where map[string]interface{}) (bool, erro
 	case err == sql.ErrNoRows:
 		return false, nil
 	case err != nil:
-		log.WithFields(log.Fields{"reason": err.Error(), "table": table}).Info("Could not get model.")
+		log.WithFields(log.Fields{"reason": err.Error(), "table": table}).Error("Could not get model.")
 		return false, err
 	}
 
@@ -340,7 +340,7 @@ func (b *Backend) scanFilesystem() {
 			return nil
 		}
 
-		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Info("Found file.")
+		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
 		_, file := filepath.Split(path)
 		s := &Song{
@@ -351,7 +351,7 @@ func (b *Backend) scanFilesystem() {
 
 		mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
 		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Info("Couldn't parse id3 tag")
+			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Couldn't parse id3 tag")
 
 		} else {
 			defer mp3File.Close()
@@ -361,7 +361,7 @@ func (b *Backend) scanFilesystem() {
 			if err == nil {
 				s.Year.Set(int64(year))
 			} else {
-				log.Println(err.Error())
+				log.WithFields(log.Fields{"reason": err.Error(), "year": yearRaw}).Debug("Could not parse year.")
 			}
 			s.Genre.Set(mp3File.Genre())
 		}
@@ -400,19 +400,19 @@ func (b *Backend) scanFilesystem() {
 			if ok, _ := find("images", image, map[string]interface{}{"hash": image.Hash}); !ok {
 				extensions, err := mime.ExtensionsByType(image.Mime)
 				if err != nil {
-					log.WithFields(log.Fields{"reason": err.Error(), "mime": image.Mime}).Info("Failed to guess extension for mime.")
+					log.WithFields(log.Fields{"reason": err.Error(), "mime": image.Mime, "file": s.Path}).Debug("Failed to guess extension for cover.")
 					goto SkipCover
 				}
 
 				if extensions == nil || len(extensions) == 0 {
-					log.WithFields(log.Fields{"mime": image.Mime}).Info("No extensions found for mime.")
+					log.WithFields(log.Fields{"mime": image.Mime, "file": s.Path}).Debug("Failed to guess extension for cover.")
 					goto SkipCover
 				}
 
 				image.Path = "images/" + image.Hash + extensions[0]
 				image.Link = "/images/" + image.Hash + extensions[0]
 				if err := ioutil.WriteFile(image.Path, apic.Data(), 0666); err != nil {
-					log.WithFields(log.Fields{"reason": err.Error(), "path": image.Path}).Info("Failed to store cover.")
+					log.WithFields(log.Fields{"reason": err.Error(), "path": image.Path}).Error("Failed to store cover.")
 					goto SkipCover
 				}
 
@@ -433,7 +433,11 @@ func (b *Backend) scanFilesystem() {
 			s.Album.Year = s.Year
 			update("albums", s.Album, map[string]interface{}{"id": s.Album.Id})
 		}
-		insert("songs", s)
+		if err := insert("songs", s); err == nil {
+			log.WithFields(log.Fields{"song": s.Name}).Info("Added song.")
+		} else {
+			log.WithFields(log.Fields{"song": s}).Error("Failed to add song.")
+		}
 		return nil
 	})
 }
@@ -471,6 +475,7 @@ type Config struct {
 	Hostname string `json:"hostname"`
 	Port     uint32 `json:"port"`
 	Database string `json:"database"`
+	LogLevel string `json:"log_level"`
 }
 
 var config = Config{}
@@ -490,6 +495,17 @@ func loadConfig() {
 	if len(config.Database) == 0 {
 		config.Database = "file::memory:?mode=memory&cache=shared"
 	}
+
+	config.LogLevel = strings.ToLower(config.LogLevel)
+
+	switch config.LogLevel {
+	case "debug":
+	case "info":
+	case "warn":
+	case "error":
+	default:
+		config.LogLevel = "info"
+	}
 }
 
 var db *sqlx.DB
@@ -505,7 +521,7 @@ func createSchema() {
 		panic("Failed to create schema: " + err.Error())
 	}
 
-	log.Info("Schema created.")
+	log.WithFields(log.Fields{"database": config.Database}).Info("Created database.")
 }
 
 func loadDatabase() {
@@ -596,6 +612,21 @@ func getAlbumSongs(ids ...int64) ([]*SongResponse, error) {
 
 func main() {
 	loadConfig()
+	logLevel := log.InfoLevel
+	switch config.LogLevel {
+	case "debug":
+		logLevel = log.DebugLevel
+	case "info":
+		logLevel = log.InfoLevel
+	case "warn":
+		logLevel = log.WarnLevel
+	case "error":
+		logLevel = log.ErrorLevel
+	default:
+		logLevel = log.InfoLevel
+	}
+	log.SetLevel(logLevel)
+
 	loadDatabase()
 
 	backend := NewBackend()

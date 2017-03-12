@@ -6,5 +6,8 @@
   // For in memory sqlite use: file::memory:?mode=memory&cache=shared
   // To use a file use a name that ends with .sqlite extension. E.g db.sqlite.
   // Defaults to in memory.
-  "database": "file::memory:?mode=memory&cache=shared"
+  "database": "file::memory:?mode=memory&cache=shared",
+  // The log level. debug,info,warn,error
+  // Defaults to info.
+  "log_level": "info"
 }
