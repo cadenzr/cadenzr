@@ -470,6 +470,7 @@ func corsHeader(next echo.HandlerFunc) echo.HandlerFunc {
 type Config struct {
 	Hostname string `json:"hostname"`
 	Port     uint32 `json:"port"`
+	Database string `json:"database"`
 }
 
 var config = Config{}
@@ -478,12 +479,17 @@ func loadConfig() {
 	raw, err := ioutil.ReadFile("./config.json")
 	if err != nil {
 		log.WithFields(log.Fields{"reason": err.Error()}).Warn("Could not load config.json.")
-
-		config.Port = 8080
-		return
+	} else {
+		json.Unmarshal(raw, &config)
 	}
 
-	json.Unmarshal(raw, &config)
+	if config.Port == 0 {
+		config.Port = 8080
+	}
+
+	if len(config.Database) == 0 {
+		config.Database = "file::memory:?mode=memory&cache=shared"
+	}
 }
 
 var db *sqlx.DB
@@ -503,9 +509,12 @@ func createSchema() {
 }
 
 func loadDatabase() {
-	os.Remove("./db.sqlite")
+	if strings.HasSuffix(config.Database, ".sqlite") {
+		os.Remove(config.Database)
+	}
+
 	var err error
-	db, err = sqlx.Open("sqlite3", "./db.sqlite")
+	db, err = sqlx.Open("sqlite3", config.Database)
 	if err != nil {
 		panic("Could not open database: " + err.Error())
 	}

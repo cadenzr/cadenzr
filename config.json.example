@@ -1,4 +1,10 @@
 {
+  // Defaults to ""
   "hostname": "",
-  "port": 8080
+  // Defaults to 8080
+  "port": 8080,
+  // For in memory sqlite use: file::memory:?mode=memory&cache=shared
+  // To use a file use a name that ends with .sqlite extension. E.g db.sqlite.
+  // Defaults to in memory.
+  "database": "file::memory:?mode=memory&cache=shared"
 }
