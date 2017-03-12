@@ -48,14 +48,14 @@ gulp.task('copy-vendor', function() {
 		.pipe(gulp.dest('dist/assets/vendor'));
 });
 
-gulp.task('typescript', function() {
+gulp.task('typescript', ['copy-vue-components'], function() {
 	var tsResult = tsProject.src()
 	.pipe(tsProject());
 
 	return tsResult.js.pipe(gulp.dest(workingDir + '/js'));
 });
 
-gulp.task('browserify', ['copy-vue-components', 'typescript'], function() {
+gulp.task('browserify', ['typescript'], function() {
 		var bundle = 'bundle.';
 		if(util.env.production) {
 			bundle += 'min.';
