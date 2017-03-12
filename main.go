@@ -8,19 +8,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 
-	"crypto/md5"
-	"encoding/hex"
-
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/labstack/echo"
 	_ "github.com/mattn/go-sqlite3"
 	id3 "github.com/mikkyang/id3-go"
-	id3v2 "github.com/mikkyang/id3-go/v2"
 )
 
 type NullInt64 struct {
@@ -88,34 +86,60 @@ func (v *NullString) Set(data string) {
 }
 
 type Song struct {
-	Id     uint32     `json:"id"`
-	Name   string     `json:"name"`
-	Artist NullString `json:"artist"`
-	Album  NullString `json:"album"`
-	Year   NullInt64  `json:"year"`
-	Genre  NullString `json:"genre"`
-	Mime   string     `json:"mime"`
-	Path   string     `json:"-"`
-	Cover  NullString `json:"cover"`
+	Id       NullInt64  `json:"id" db:"id"`
+	Name     string     `json:"name" db:"name"`
+	ArtistId NullInt64  `db:"artist_id"`
+	Artist   *Artist    `json:"artist"`
+	AlbumId  NullInt64  `db:"album_id"`
+	Album    *Album     `json:"album"`
+	Year     NullInt64  `json:"year" db:"year"`
+	Genre    NullString `json:"genre" db:"genre"`
+	Mime     string     `json:"mime" db:"mime"`
+	Path     string     `json:"-" db:"path"`
+	CoverId  NullInt64  `db:"cover_id"`
+	Cover    *Image     `json:"cover"`
+}
+
+func (s *Song) SetArtist(artist *Artist) {
+	s.Artist = artist
+	s.ArtistId = artist.Id
+}
+
+func (s *Song) SetAlbum(album *Album) {
+	s.Album = album
+	s.AlbumId = album.Id
+}
+
+func (s *Song) SetCover(cover *Image) {
+	s.Cover = cover
+	s.CoverId = cover.Id
 }
 
 type Album struct {
-	Id    uint32     `json:"id"`
-	Name  string     `json:"name"`
-	Year  string     `json:"year"`
-	Path  string     `json:"-"`
-	Cover NullString `json:"cover"`
-	Songs []*Song    `json:"songs"`
+	Id      NullInt64 `json:"id" db:"id"`
+	Name    string    `json:"name" db:"name"`
+	CoverId NullInt64 `db:"cover_id"`
+	Cover   *Image    `json:"cover"`
+
+	Songs []*Song
 }
 
-func (a *Album) GetSongs() []*Song {
+func (a *Album) SetCover(cover *Image) {
+	a.Cover = cover
+	a.CoverId = cover.Id
+}
 
-	songs := []*Song{}
-	for _, song := range a.Songs {
-		songs = append(songs, song)
-	}
+type Artist struct {
+	Id   NullInt64 `db:"id"`
+	Name string    `db:"name"`
+}
 
-	return songs
+type Image struct {
+	Id   NullInt64 `db:"id"`
+	Path string    `db:"path"`
+	Link string    `db:"link"`
+	Mime string    `db:"mime"`
+	Hash string    `db:"hash"`
 }
 
 type Backend struct {
@@ -136,6 +160,74 @@ func NewBackend() *Backend {
 		albums:      map[uint32]*Album{},
 		songs:       map[uint32]*Song{},
 	}
+}
+
+func getSQLValues(v interface{}) (columns []string, values []interface{}) {
+	// Remove all indirections so we are left with a struct.
+	for reflect.ValueOf(v).Kind() == reflect.Ptr {
+		v = reflect.Indirect(reflect.ValueOf(v)).Interface()
+	}
+
+	t := reflect.TypeOf(v)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag, ok := field.Tag.Lookup("db")
+		if !ok {
+			continue
+		}
+
+		columns = append(columns, tag)
+		values = append(values, reflect.ValueOf(v).Field(i).Interface())
+	}
+
+	return
+}
+
+// v should be a pointer to a struct.
+func insert(table string, v interface{}) error {
+	// Remove all indirections so we are left with a struct.
+	columns, values := getSQLValues(v)
+
+	query := `
+	INSERT INTO "` + table + `" (` + strings.Join(columns, ",") + `)
+	VALUES (` + strings.Join(strings.Split(strings.Repeat("?", len(columns)), ""), ",") + `)
+	`
+	log.Info(query)
+
+	r, err := db.Exec(query, values...)
+	if err != nil {
+		log.WithFields(log.Fields{"reason": err.Error()}).Error("Insert into " + table + " failed.")
+		return err
+	}
+
+	id, _ := r.LastInsertId()
+	targetId := reflect.ValueOf(v).Elem().FieldByName("Id").Addr().Interface().(*NullInt64)
+	targetId.Set(id)
+	return nil
+}
+
+func insertIfNotExists(table string, v interface{}, exists map[string]interface{}) error {
+	columns, _ := getSQLValues(v)
+	wheres := []string{}
+	values := []interface{}{}
+	for k, v := range exists {
+		wheres = append(wheres, k+" = ?")
+		values = append(values, v)
+	}
+
+	query := `SELECT ` + strings.Join(columns, ",") + ` FROM "` + table + `" WHERE ` + strings.Join(wheres, " AND ")
+	log.Info(query)
+
+	err := db.Get(v, query, values...)
+	switch {
+	case err == sql.ErrNoRows:
+		err = insert(table, v)
+	case err != nil:
+		log.WithFields(log.Fields{"reason": err.Error(), "table": table}).Info("Could not get model.")
+	}
+
+	return err
 }
 
 func (b *Backend) scanFilesystem() {
@@ -163,7 +255,6 @@ func (b *Backend) scanFilesystem() {
 
 		_, file := filepath.Split(path)
 		s := &Song{
-			Id:   b.nextSongId,
 			Name: file,
 			Mime: mimeType,
 			Path: path,
@@ -172,11 +263,10 @@ func (b *Backend) scanFilesystem() {
 		mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Info("Couldn't parse id3 tag")
+
 		} else {
 			defer mp3File.Close()
 			s.Name = mp3File.Title()
-			s.Artist.Set(mp3File.Artist())
-			s.Album.Set(mp3File.Album())
 			year, err := strconv.Atoi(mp3File.Year())
 			if err == nil {
 				s.Year.Set(int64(year))
@@ -184,97 +274,25 @@ func (b *Backend) scanFilesystem() {
 			s.Genre.Set(mp3File.Genre())
 		}
 
-		insertArtist := "INSERT OR FAIL INTO `artists` (`name`) VALUES (?)"
-		artistId := int64(0)
+		if insert("songs", s) != nil {
+			return nil
+		}
+
 		if len(mp3File.Artist()) > 0 {
-			err := db.QueryRow("SELECT `id` FROM `artists` WHERE `name` = ?", mp3File.Artist()).Scan(&artistId)
-			if err != nil {
-				r, err := db.Exec(insertArtist, mp3File.Artist())
-				if err != nil {
-					log.WithFields(log.Fields{"reason": err.Error(), "artist": mp3File.Artist()}).Error("Failed to insert artist.")
-				} else {
-					artistId, _ = r.LastInsertId()
-				}
+			artist := &Artist{
+				Name: mp3File.Artist(),
+			}
+
+			err := insertIfNotExists("artists", artist, map[string]interface{}{
+				"name": mp3File.Artist(),
+			})
+
+			if err == nil {
+				s.SetArtist(artist)
 			}
 		}
 
-		insertAlbum := "INSERT OR FAIL INTO `albums` (`name`) VALUES (?)"
-		albumId := int64(0)
-		albumCover := NullInt64{}
-		if len(mp3File.Album()) > 0 {
-			err := db.QueryRow("SELECT `id`, `cover_id` FROM `albums` WHERE `name` = ?", mp3File.Album()).Scan(&albumId, &albumCover)
-			if err != nil {
-				r, err := db.Exec(insertAlbum, mp3File.Album())
-				if err != nil {
-					log.WithFields(log.Fields{"reason": err.Error(), "album": mp3File.Album()}).Error("Failed to insert album.")
-				} else {
-					albumId, _ = r.LastInsertId()
-				}
-			}
-		}
-
-		insertSong := "INSERT OR IGNORE INTO `songs` (`name`, `artist_id`, `album_id`, `year`, `genre`, `mime`, `path`, `cover_id`) VALUES (?,?,?,?,?,?,?,?)"
-		songValues := [9]interface{}{}
-		songValues[0] = s.Name
-		if artistId != 0 {
-			songValues[1] = artistId
-		}
-		if albumId != 0 {
-			songValues[2] = albumId
-		}
-		songValues[3] = s.Year
-		songValues[4] = s.Genre
-		songValues[5] = s.Mime
-		songValues[6] = s.Path
-
-		r, err := db.Exec(insertSong, songValues[:]...)
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name, "artist": artistId, "album": albumId}).Error("Failed to insert song.")
-		} else {
-			songId, _ := r.LastInsertId()
-
-			apic := mp3File.Frame("APIC")
-			if apic != nil {
-
-				imgData := (apic.(*id3v2.ImageFrame)).Data()
-				hash := md5.Sum(imgData)
-				hashString := hex.EncodeToString(hash[:])
-				extensions, _ := mime.ExtensionsByType((apic.(*id3v2.ImageFrame)).MIMEType())
-				extension := ""
-				if extensions != nil && len(extensions) > 0 {
-					extension = extensions[0]
-				}
-
-				path := "images/" + strconv.Itoa(int(songId)) + extension
-
-				coverId := int64(0)
-				err = db.QueryRow("SELECT `id` FROM `images` WHERE `hash` = ?", hashString).Scan(&coverId)
-				if err != nil {
-					err := ioutil.WriteFile(path, imgData, 0666)
-					if err != nil {
-						log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to write cover to disk.")
-					} else {
-						r, err := db.Exec("INSERT INTO `images` (`path`, `link`, `mime`, `hash`) VALUES (?,?,?,?)", path, path, (apic.(*id3v2.ImageFrame)).MIMEType(), hashString)
-						if err != nil {
-							log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to insert cover.")
-						} else {
-							coverId, _ = r.LastInsertId()
-						}
-					}
-				}
-				if coverId != 0 {
-					if _, err := db.Exec("UPDATE `songs` SET `cover_id` = ? WHERE `id` = ?", coverId, songId); err != nil {
-						log.WithFields(log.Fields{"reason": err.Error(), "song": songId, "cover": coverId}).Error("Failed to set cover for song.")
-					}
-
-					if !albumCover.Valid {
-						if _, err := db.Exec("UPDATE `albums` SET `cover_id` = ? WHERE `id` = ?", coverId, albumId); err != nil {
-							log.WithFields(log.Fields{"reason": err.Error(), "album": albumId, "cover": coverId}).Error("Failed to set cover for album.")
-						}
-					}
-				}
-			}
-		}
+		log.Println(s)
 
 		return nil
 	})
@@ -364,7 +382,7 @@ func loadConfig() {
 	json.Unmarshal(raw, &config)
 }
 
-var db *sql.DB
+var db *sqlx.DB
 
 func createSchema() {
 	schema, err := ioutil.ReadFile("./schema.sql")
@@ -383,7 +401,7 @@ func createSchema() {
 func loadDatabase() {
 	os.Remove("./db.sqlite")
 	var err error
-	db, err = sql.Open("sqlite3", "./db.sqlite")
+	db, err = sqlx.Open("sqlite3", "./db.sqlite")
 	if err != nil {
 		panic("Could not open database: " + err.Error())
 	}
@@ -407,7 +425,7 @@ func getSong(id uint32) (*Song, error) {
 	return song, nil
 }
 
-func getAlbumSongs(id uint32) ([]*Song, error) {
+func getAlbumSongs(id int64) ([]*Song, error) {
 	songs := []*Song{}
 
 	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `images`.`link` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` JOIN `images` ON `songs`.`cover_id` = `images`.`id` WHERE `songs`.`album_id` = ?"
@@ -433,6 +451,8 @@ func getAlbumSongs(id uint32) ([]*Song, error) {
 }
 
 func main() {
+	log.Println(getSQLValues(&Song{}))
+
 	loadConfig()
 	loadDatabase()
 
@@ -465,7 +485,7 @@ func main() {
 				return c.NoContent(http.StatusInternalServerError)
 			}
 
-			album.Songs, err = getAlbumSongs(album.Id)
+			album.Songs, err = getAlbumSongs(album.Id.Int64)
 			if err != nil {
 				return c.NoContent(http.StatusInternalServerError)
 			}
@@ -489,7 +509,7 @@ func main() {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
-		album.Songs, err = getAlbumSongs(album.Id)
+		album.Songs, err = getAlbumSongs(album.Id.Int64)
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
