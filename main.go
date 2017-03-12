@@ -491,12 +491,12 @@ var db *sqlx.DB
 func createSchema() {
 	schema, err := ioutil.ReadFile("./schema.sql")
 	if err != nil {
-		panic("Could not load schema file: " + err.Error())
+		log.Fatalln("Could not load schema file: " + err.Error())
 	}
 
 	_, err = db.Exec(string(schema))
 	if err != nil {
-		panic("Failed to create schema: " + err.Error())
+		log.Fatalln("Failed to create schema: " + err.Error())
 	}
 
 	log.Info("Schema created.")
@@ -507,7 +507,7 @@ func loadDatabase() {
 	var err error
 	db, err = sqlx.Open("sqlite3", "file::memory:?cache=shared")
 	if err != nil {
-		panic("Could not open database: " + err.Error())
+		log.Fatalln("Could not open database: " + err.Error())
 	}
 
 	createSchema()
