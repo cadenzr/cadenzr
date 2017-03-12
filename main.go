@@ -495,7 +495,7 @@ func createSchema() {
 func loadDatabase() {
 	os.Remove("./db.sqlite")
 	var err error
-	db, err = sqlx.Open("sqlite3", "./db.sqlite")
+	db, err = sqlx.Open("sqlite3", ":memory")
 	if err != nil {
 		panic("Could not open database: " + err.Error())
 	}
