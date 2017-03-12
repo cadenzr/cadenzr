@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/md5"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
 	"mime"
@@ -19,6 +21,7 @@ import (
 	"github.com/labstack/echo"
 	_ "github.com/mattn/go-sqlite3"
 	id3 "github.com/mikkyang/id3-go"
+	id3v2 "github.com/mikkyang/id3-go/v2"
 )
 
 type NullInt64 struct {
@@ -88,45 +91,45 @@ func (v *NullString) Set(data string) {
 type Song struct {
 	Id       NullInt64  `json:"id" db:"id"`
 	Name     string     `json:"name" db:"name"`
-	ArtistId NullInt64  `db:"artist_id"`
+	ArtistId *NullInt64 `db:"artist_id"`
 	Artist   *Artist    `json:"artist"`
-	AlbumId  NullInt64  `db:"album_id"`
+	AlbumId  *NullInt64 `db:"album_id"`
 	Album    *Album     `json:"album"`
 	Year     NullInt64  `json:"year" db:"year"`
 	Genre    NullString `json:"genre" db:"genre"`
 	Mime     string     `json:"mime" db:"mime"`
 	Path     string     `json:"-" db:"path"`
-	CoverId  NullInt64  `db:"cover_id"`
+	CoverId  *NullInt64 `db:"cover_id"`
 	Cover    *Image     `json:"cover"`
 }
 
 func (s *Song) SetArtist(artist *Artist) {
 	s.Artist = artist
-	s.ArtistId = artist.Id
+	s.ArtistId = &artist.Id
 }
 
 func (s *Song) SetAlbum(album *Album) {
 	s.Album = album
-	s.AlbumId = album.Id
+	s.AlbumId = &album.Id
 }
 
 func (s *Song) SetCover(cover *Image) {
 	s.Cover = cover
-	s.CoverId = cover.Id
+	s.CoverId = &cover.Id
 }
 
 type Album struct {
-	Id      NullInt64 `json:"id" db:"id"`
-	Name    string    `json:"name" db:"name"`
-	CoverId NullInt64 `db:"cover_id"`
-	Cover   *Image    `json:"cover"`
+	Id      NullInt64  `json:"id" db:"id"`
+	Name    string     `json:"name" db:"name"`
+	CoverId *NullInt64 `db:"cover_id"`
+	Cover   *Image     `json:"cover"`
 
 	Songs []*Song
 }
 
 func (a *Album) SetCover(cover *Image) {
 	a.Cover = cover
-	a.CoverId = cover.Id
+	a.CoverId = &cover.Id
 }
 
 type Artist struct {
@@ -162,13 +165,19 @@ func NewBackend() *Backend {
 	}
 }
 
-func getSQLValues(v interface{}) (columns []string, values []interface{}) {
-	// Remove all indirections so we are left with a struct.
-	for reflect.ValueOf(v).Kind() == reflect.Ptr {
-		v = reflect.Indirect(reflect.ValueOf(v)).Interface()
-	}
-
+func getSQLColumns(v interface{}) (columns []string) {
 	t := reflect.TypeOf(v)
+	tv := reflect.ValueOf(v)
+	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
+		if t.Kind() == reflect.Ptr {
+			tv = reflect.Indirect(tv)
+			t = t.Elem()
+		}
+
+		if t.Kind() == reflect.Array || t.Kind() == reflect.Slice {
+			t = t.Elem()
+		}
+	}
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -178,16 +187,69 @@ func getSQLValues(v interface{}) (columns []string, values []interface{}) {
 		}
 
 		columns = append(columns, tag)
-		values = append(values, reflect.ValueOf(v).Field(i).Interface())
 	}
 
 	return
 }
 
+func getSQLValues(v interface{}) (values []interface{}) {
+	t := reflect.TypeOf(v)
+	tv := reflect.ValueOf(v)
+	for t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Ptr {
+			tv = reflect.Indirect(tv)
+			t = t.Elem()
+		}
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		_, ok := field.Tag.Lookup("db")
+		if !ok {
+			continue
+		}
+
+		values = append(values, reflect.ValueOf(v).Elem().Field(i).Interface())
+	}
+
+	return
+}
+
+func update(table string, v interface{}, where map[string]interface{}) error {
+	// Remove all indirections so we are left with a struct.
+	columns := getSQLColumns(v)
+	values := getSQLValues(v)
+	for i := range columns {
+		columns[i] = columns[i] + "=?"
+	}
+
+	wheres := []string{}
+	for k, v := range where {
+		wheres = append(wheres, k+"=?")
+		values = append(values, v)
+	}
+
+	query := `
+	UPDATE "` + table + `"
+	SET ` + strings.Join(columns, ",") + `
+	WHERE ` + strings.Join(wheres, " AND ") + `
+	`
+	log.Info(query)
+
+	_, err := db.Exec(query, values...)
+	if err != nil {
+		log.WithFields(log.Fields{"reason": err.Error()}).Error("Update " + table + " failed.")
+		return err
+	}
+
+	return nil
+}
+
 // v should be a pointer to a struct.
 func insert(table string, v interface{}) error {
 	// Remove all indirections so we are left with a struct.
-	columns, values := getSQLValues(v)
+	columns := getSQLColumns(v)
+	values := getSQLValues(v)
 
 	query := `
 	INSERT INTO "` + table + `" (` + strings.Join(columns, ",") + `)
@@ -207,11 +269,16 @@ func insert(table string, v interface{}) error {
 	return nil
 }
 
-func insertIfNotExists(table string, v interface{}, exists map[string]interface{}) error {
-	columns, _ := getSQLValues(v)
+func find(table string, v interface{}, where map[string]interface{}) (bool, error) {
+	underLyingType := reflect.TypeOf(v)
+	for underLyingType.Kind() == reflect.Ptr {
+		underLyingType = underLyingType.Elem()
+	}
+
+	columns := getSQLColumns(v)
 	wheres := []string{}
 	values := []interface{}{}
-	for k, v := range exists {
+	for k, v := range where {
 		wheres = append(wheres, k+" = ?")
 		values = append(values, v)
 	}
@@ -219,12 +286,32 @@ func insertIfNotExists(table string, v interface{}, exists map[string]interface{
 	query := `SELECT ` + strings.Join(columns, ",") + ` FROM "` + table + `" WHERE ` + strings.Join(wheres, " AND ")
 	log.Info(query)
 
-	err := db.Get(v, query, values...)
+	var err error
+	if underLyingType.Kind() == reflect.Slice || underLyingType.Kind() == reflect.Array {
+		err = db.Select(v, query, values...)
+	} else {
+		err = db.Get(v, query, values...)
+	}
+
 	switch {
 	case err == sql.ErrNoRows:
-		err = insert(table, v)
+		return false, nil
 	case err != nil:
 		log.WithFields(log.Fields{"reason": err.Error(), "table": table}).Info("Could not get model.")
+		return false, err
+	}
+
+	return true, nil
+}
+
+func insertIfNotExists(table string, v interface{}, exists map[string]interface{}) error {
+	ok, err := find(table, v, exists)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return insert(table, v)
 	}
 
 	return err
@@ -274,64 +361,71 @@ func (b *Backend) scanFilesystem() {
 			s.Genre.Set(mp3File.Genre())
 		}
 
-		if insert("songs", s) != nil {
-			return nil
-		}
-
 		if len(mp3File.Artist()) > 0 {
 			artist := &Artist{
 				Name: mp3File.Artist(),
 			}
 
-			err := insertIfNotExists("artists", artist, map[string]interface{}{
-				"name": mp3File.Artist(),
-			})
-
-			if err == nil {
+			if insertIfNotExists("artists", artist, map[string]interface{}{"name": artist.Name}) == nil {
 				s.SetArtist(artist)
 			}
 		}
 
-		log.Println(s)
+		if len(mp3File.Album()) > 0 {
+			album := &Album{
+				Name: mp3File.Album(),
+			}
 
+			s.SetAlbum(album)
+		}
+
+		if apic, ok := mp3File.Frame("APIC").(*id3v2.ImageFrame); ok {
+			image := &Image{}
+
+			// Use DetectContentType since it is more reliable than apic.MimeType.
+			if coverMime := http.DetectContentType(apic.Data()); isImage(coverMime) {
+				image.Mime = coverMime
+			} else {
+				goto SkipCover
+			}
+
+			md5Bytes := md5.Sum(apic.Data())
+			image.Hash = hex.EncodeToString(md5Bytes[:])
+
+			if ok, _ := find("images", image, map[string]interface{}{"hash": image.Hash}); !ok {
+				extensions, err := mime.ExtensionsByType(image.Mime)
+				if err != nil {
+					log.WithFields(log.Fields{"reason": err.Error(), "mime": image.Mime}).Info("Failed to guess extension for mime.")
+					goto SkipCover
+				}
+
+				if extensions == nil || len(extensions) == 0 {
+					log.WithFields(log.Fields{"mime": image.Mime}).Info("No extensions found for mime.")
+					goto SkipCover
+				}
+
+				image.Path = "images/" + image.Hash + extensions[0]
+				image.Link = "/images/" + image.Hash + extensions[0]
+				if err := ioutil.WriteFile(image.Path, apic.Data(), 0666); err != nil {
+					log.WithFields(log.Fields{"reason": err.Error(), "path": image.Path}).Info("Failed to store cover.")
+					goto SkipCover
+				}
+
+				insert("images", image)
+			}
+
+			if image.Id.Valid {
+				s.SetCover(image)
+				if s.Album != nil && s.Album.Cover == nil {
+					s.Album.SetCover(image)
+				}
+			}
+		}
+	SkipCover:
+		insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name})
+		insert("songs", s)
 		return nil
 	})
-}
-
-func (b *Backend) albumByName(name string) *Album {
-	for _, album := range b.albums {
-		if album.Name == name {
-			return album
-		}
-	}
-
-	return nil
-}
-
-func (b *Backend) Albums() []*Album {
-	b.lock.RLock()
-	defer b.lock.RUnlock()
-
-	albums := []*Album{}
-	for _, album := range b.albums {
-		albums = append(albums, album)
-	}
-
-	return albums
-}
-
-func (b *Backend) AlbumById(id uint32) *Album {
-	b.lock.RLock()
-	defer b.lock.RUnlock()
-
-	return b.albums[id]
-}
-
-func (b *Backend) SongById(id uint32) *Song {
-	b.lock.RLock()
-	defer b.lock.RUnlock()
-
-	return b.songs[id]
 }
 
 func (b *Backend) Start() {
@@ -409,50 +503,66 @@ func loadDatabase() {
 	createSchema()
 }
 
-func getSong(id uint32) (*Song, error) {
-	song := &Song{}
-
-	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `images`.`link` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` JOIN `images` ON `songs`.`cover_id` = `images`.`id` WHERE `songs`.`id` = ?"
-	err := db.QueryRow(query, id).Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Year, &song.Genre, &song.Mime, &song.Path, &song.Cover)
-	switch {
-	case err == sql.ErrNoRows:
-		return nil, nil
-	case err != nil:
-		log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not select songs for album.")
-		return nil, err
-	}
-
-	return song, nil
+type JsonSong struct {
+	Id     int64      `db:"id" json:"id"`
+	Name   string     `db:"name" json:"name"`
+	Artist NullString `db:"artist" json:"artist"`
+	Album  NullString `db:"album" json:"album"`
+	Year   int        `db:"year" json:"year"`
+	Genre  string     `db:"genre" json:"genre"`
+	Mime   string     `db:"mime" json:"mime"`
+	Cover  NullString `db:"cover" json:"cover"`
 }
 
-func getAlbumSongs(id int64) ([]*Song, error) {
-	songs := []*Song{}
+type JsonAlbum struct {
+	Id    int64      `db:"id" json:"id"`
+	Name  string     `db:"name" json:"name"`
+	Cover NullString `db:"cover" json:"cover"`
+}
 
-	query := "SELECT `songs`.`id`, `songs`.`name`, `artists`.`name`, `albums`.`name`, `songs`.`year`, `songs`.`genre`, `songs`.`mime`, `songs`.`path`, `images`.`link` FROM `songs` JOIN `artists` ON `songs`.`artist_id` = `artists`.`id` JOIN `albums` ON `songs`.`album_id` = `albums`.`id` JOIN `images` ON `songs`.`cover_id` = `images`.`id` WHERE `songs`.`album_id` = ?"
-	rows, err := db.Query(query, id)
+func getAlbumSongs(id int64) ([]*JsonSong, error) {
+	songs := []*JsonSong{}
+
+	query := `
+	SELECT
+					"songs"."id" as id,
+					"songs"."name" as name,
+					"songs"."year" as year,
+					"songs"."genre" as genre,
+					"songs"."mime" as mime,
+
+					"artists"."name" as artist,
+
+					"albums"."name" as album,
+
+					"images"."link" as cover
+	FROM "songs"
+	JOIN "artists" ON "songs"."artist_id" = "artists"."id"
+	JOIN "albums" ON "songs"."album_id" = "albums"."id"
+	JOIN "images" ON "songs"."cover_id" = "images"."id"
+	WHERE "songs"."album_id" = ?
+	`
+
+	rows, err := db.Queryx(query, id)
 	if err != nil {
-		log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not select songs for album.")
+		log.WithFields(log.Fields{"reason": err.Error(), "album": id}).Error("Could not select songs for album.")
 		return songs, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
-		song := &Song{}
-
-		err := rows.Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Year, &song.Genre, &song.Mime, &song.Path, &song.Cover)
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan song.")
-			return songs, err
+		result := &JsonSong{}
+		if err := rows.StructScan(result); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "album": id}).Error("getAlbumSongs: Failed to scan.")
+			continue
 		}
-
-		songs = append(songs, song)
+		songs = append(songs, result)
 	}
 
 	return songs, nil
 }
 
 func main() {
-	log.Println(getSQLValues(&Song{}))
-
 	loadConfig()
 	loadDatabase()
 
@@ -470,60 +580,91 @@ func main() {
 	})
 
 	e.GET("/albums", func(c echo.Context) error {
-		rows, err := db.Query("SELECT `albums`.`id`, `albums`.`name`, `images`.`link` FROM `albums` JOIN `images` ON `albums`.`cover_id` = `images`.`id`")
+		query := `
+			SELECT
+				"albums"."id",
+				"albums"."name",
+				"images"."link"
+			FROM "albums"
+			JOIN "images" ON "albums"."cover_id" = "images"."id"
+		`
+		rows, err := db.Query(query)
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not fetch albums.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
-		albums := []Album{}
+		results := []map[string]interface{}{}
 
 		for rows.Next() {
-			var album Album
-			if err := rows.Scan(&album.Id, &album.Name, &album.Cover); err != nil {
+			var id int64
+			var name string
+			var cover NullString
+			if err := rows.Scan(&id, &name, &cover); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 				return c.NoContent(http.StatusInternalServerError)
 			}
 
-			album.Songs, err = getAlbumSongs(album.Id.Int64)
+			songs, err := getAlbumSongs(id)
 			if err != nil {
 				return c.NoContent(http.StatusInternalServerError)
 			}
-			albums = append(albums, album)
+			results = append(results, map[string]interface{}{
+				"id":    id,
+				"name":  name,
+				"cover": cover,
+				"songs": songs,
+			})
 		}
 
-		return c.JSON(http.StatusOK, albums)
+		return c.JSON(http.StatusOK, results)
 	})
 
 	e.GET("/albums/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
+		query := `
+			SELECT
+				"albums"."id",
+				"albums"."name",
+				"images"."link"
+			FROM "albums"
+			JOIN "images" ON "albums"."cover_id" = "images"."id"
+			WHERE "albums"."id" = ?
+		`
 
-		var album Album
-		err := db.QueryRow("SELECT `id`, `name` FROM `albums` WHERE `id` = ?", id).Scan(&album.Id, &album.Name)
-		switch {
-		case err == sql.ErrNoRows:
-			log.WithFields(log.Fields{"album": id}).Error("Album not found.")
-			return c.NoContent(http.StatusNotFound)
-		case err != nil:
+		var name string
+		var cover NullString
+		err := db.QueryRowx(query, id).Scan(&id, &name, &cover)
+		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
-		album.Songs, err = getAlbumSongs(album.Id.Int64)
+		songs, err := getAlbumSongs(int64(id))
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not get album songs.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
-		return c.JSON(http.StatusOK, album)
+		result := map[string]interface{}{
+			"id":    id,
+			"name":  name,
+			"cover": cover,
+			"songs": songs,
+		}
+
+		return c.JSON(http.StatusOK, result)
 	})
 
 	e.GET("/songs/:id/stream", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
-		song, err := getSong(id)
+		song := &Song{}
+		ok, err := find("songs", song, map[string]interface{}{"id": id})
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		if song == nil {
+
+		if !ok {
 			return c.NoContent(http.StatusNotFound)
 		}
 
