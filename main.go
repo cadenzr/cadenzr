@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
@@ -121,6 +122,7 @@ func (s *Song) SetCover(cover *Image) {
 type Album struct {
 	Id      NullInt64  `json:"id" db:"id"`
 	Name    string     `json:"name" db:"name"`
+	Year    NullInt64  `json:"year" db:"year"`
 	CoverId *NullInt64 `db:"cover_id"`
 	Cover   *Image     `json:"cover"`
 
@@ -354,9 +356,12 @@ func (b *Backend) scanFilesystem() {
 		} else {
 			defer mp3File.Close()
 			s.Name = mp3File.Title()
-			year, err := strconv.Atoi(mp3File.Year())
+			yearRaw := string(bytes.Trim([]byte(mp3File.Year()), "\x00"))
+			year, err := strconv.Atoi(yearRaw)
 			if err == nil {
 				s.Year.Set(int64(year))
+			} else {
+				log.Println(err.Error())
 			}
 			s.Genre.Set(mp3File.Genre())
 		}
@@ -422,7 +427,12 @@ func (b *Backend) scanFilesystem() {
 			}
 		}
 	SkipCover:
+
 		insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name})
+		if !s.Album.Year.Valid && s.Year.Valid {
+			s.Album.Year = s.Year
+			update("albums", s.Album, map[string]interface{}{"id": s.Album.Id})
+		}
 		insert("songs", s)
 		return nil
 	})
@@ -517,6 +527,7 @@ type JsonSong struct {
 type JsonAlbum struct {
 	Id    int64      `db:"id" json:"id"`
 	Name  string     `db:"name" json:"name"`
+	Year  NullInt64  `db:"year" json:"year"`
 	Cover NullString `db:"cover" json:"cover"`
 }
 
@@ -584,6 +595,7 @@ func main() {
 			SELECT
 				"albums"."id",
 				"albums"."name",
+				"albums"."year",
 				"images"."link"
 			FROM "albums"
 			JOIN "images" ON "albums"."cover_id" = "images"."id"
@@ -599,8 +611,9 @@ func main() {
 		for rows.Next() {
 			var id int64
 			var name string
+			var year NullInt64
 			var cover NullString
-			if err := rows.Scan(&id, &name, &cover); err != nil {
+			if err := rows.Scan(&id, &name, &year, &cover); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 				return c.NoContent(http.StatusInternalServerError)
 			}
@@ -612,6 +625,7 @@ func main() {
 			results = append(results, map[string]interface{}{
 				"id":    id,
 				"name":  name,
+				"year":  year,
 				"cover": cover,
 				"songs": songs,
 			})
@@ -626,6 +640,7 @@ func main() {
 			SELECT
 				"albums"."id",
 				"albums"."name",
+				"albums"."year",
 				"images"."link"
 			FROM "albums"
 			JOIN "images" ON "albums"."cover_id" = "images"."id"
@@ -633,8 +648,9 @@ func main() {
 		`
 
 		var name string
+		var year NullInt64
 		var cover NullString
-		err := db.QueryRowx(query, id).Scan(&id, &name, &cover)
+		err := db.QueryRowx(query, id).Scan(&id, &name, &year, &cover)
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 			return c.NoContent(http.StatusInternalServerError)
@@ -649,6 +665,7 @@ func main() {
 		result := map[string]interface{}{
 			"id":    id,
 			"name":  name,
+			"year":  year,
 			"cover": cover,
 			"songs": songs,
 		}

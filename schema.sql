@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS "albums" (
   `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
   `name`	TEXT NOT NULL UNIQUE,
   `cover_id`	INTEGER,
+  `year`	INTEGER,
 
   FOREIGN KEY(`cover_id`) REFERENCES `images`(`id`)
 
