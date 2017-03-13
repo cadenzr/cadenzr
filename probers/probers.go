@@ -3,12 +3,20 @@ package probers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"mime"
+	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strconv"
 
 	log "github.com/Cadenzr/Cadenzr/log"
 	id3 "github.com/mikkyang/id3-go"
+	id3v2 "github.com/mikkyang/id3-go/v2"
 )
 
 type AudioMeta struct {
@@ -20,6 +28,8 @@ type AudioMeta struct {
 	Year        int
 	AlbumArtist string
 	Genre       string
+
+	CoverBufer []byte
 }
 
 func parseInt(s string) int {
@@ -36,7 +46,40 @@ type AudioProber interface {
 
 type ffprobeAudioProber struct{}
 
-func (f *ffprobeAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
+func (f *ffprobeAudioProber) getCover(file string, meta *AudioMeta) {
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		return
+	}
+
+	cmd := exec.Command(ffmpeg,
+		"-i", file,
+		"-f", "image2",
+		"pipe:1",
+	)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return
+	}
+
+	if err = cmd.Start(); err != nil {
+		return
+	}
+
+	buf, err := ioutil.ReadAll(stdout)
+	if err != nil {
+		return
+	}
+
+	if err = cmd.Wait(); err != nil {
+		return
+	}
+
+	meta.CoverBufer = buf
+}
+
+func (p *ffprobeAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
 	ffprobe, err := exec.LookPath("ffprobe")
 	if err != nil {
 		return
@@ -89,6 +132,8 @@ func (f *ffprobeAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error
 	meta.Year = parseInt(response.Format.Tags.Date)
 	meta.AlbumArtist = response.Format.Tags.AlbumArtist
 
+	p.getCover(file, meta)
+
 	return
 }
 
@@ -126,6 +171,10 @@ func (p *id3AudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
 	meta.Artist = p.cleanString(id3f.Artist())
 	meta.Album = p.cleanString(id3f.Album())
 
+	if apic := id3f.Frame("APIC"); apic != nil {
+		meta.CoverBufer = apic.(*id3v2.ImageFrame).Data()
+	}
+
 	return
 }
 
@@ -134,7 +183,7 @@ func (p *id3AudioProber) String() string {
 }
 
 type prober struct {
-	Mime    string
+	Mime    *regexp.Regexp
 	Probers []AudioProber
 }
 
@@ -145,7 +194,7 @@ func Initialize() {
 	ffProber := &ffprobeAudioProber{}
 
 	probers = append(probers, &prober{
-		Mime: "audio/(mpeg|mp3)",
+		Mime: regexp.MustCompile("audio/(mpeg|mp3)"),
 		Probers: []AudioProber{
 			id3Prober,
 		},
@@ -153,7 +202,7 @@ func Initialize() {
 
 	if ffProber.hasFFprobe() {
 		probers = append(probers, &prober{
-			Mime: "audio/.*",
+			Mime: regexp.MustCompile("audio/.*"),
 			Probers: []AudioProber{
 				ffProber,
 			},
@@ -169,6 +218,48 @@ func Initialize() {
 // ProbeAudioFile Probes a file and tries to fill in AudioMeta.
 // meta is not nil if there was no error.
 func ProbeAudioFile(file string) (meta *AudioMeta, err error) {
-	ffprober := &ffprobeAudioProber{}
-	return ffprober.ProbeAudio(file)
+	ext := filepath.Ext(file)
+	mime := mime.TypeByExtension(ext)
+	if len(mime) == 0 {
+		var fh *os.File
+		fh, err = os.Open(file)
+		if err != nil {
+			return
+		}
+		defer fh.Close()
+
+		b := make([]byte, 512)
+		_, err = fh.Read(b)
+		if err != nil {
+			return
+		}
+
+		// Always returns a valid MIME.
+		mime = http.DetectContentType(b)
+	}
+
+	hasProber := false
+	for _, prober := range probers {
+		if prober.Mime.MatchString(mime) {
+			for _, ap := range prober.Probers {
+				meta, err = ap.ProbeAudio(file)
+				// Just use first prober that works.
+				// TODO: Maybe we can use next prober if this one failed.
+				log.WithFields(log.Fields{"mime": mime, "file": file}).Debugf("Using prober '%s'.", ap)
+				hasProber = true
+				break
+			}
+
+			if hasProber {
+				break
+			}
+		}
+	}
+
+	if !hasProber {
+		log.WithFields(log.Fields{"file": file, "mime": mime}).Info("No prober found for file.")
+		return meta, errors.New("No prober found for mime `" + mime + "`.")
+	}
+
+	return
 }

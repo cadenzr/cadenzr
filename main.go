@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
@@ -22,8 +21,6 @@ import (
 
 	"github.com/labstack/echo"
 	_ "github.com/mattn/go-sqlite3"
-	id3 "github.com/mikkyang/id3-go"
-	id3v2 "github.com/mikkyang/id3-go/v2"
 )
 
 type NullInt64 struct {
@@ -118,17 +115,29 @@ func NewSong() *Song {
 
 func (s *Song) SetArtist(artist *Artist) {
 	s.Artist = artist
-	s.ArtistId = &artist.Id
+	if artist == nil {
+		s.ArtistId = &NullInt64{}
+	} else {
+		s.ArtistId = &artist.Id
+	}
 }
 
 func (s *Song) SetAlbum(album *Album) {
 	s.Album = album
-	s.AlbumId = &album.Id
+	if album == nil {
+		s.AlbumId = &NullInt64{}
+	} else {
+		s.AlbumId = &album.Id
+	}
 }
 
 func (s *Song) SetCover(cover *Image) {
 	s.Cover = cover
-	s.CoverId = &cover.Id
+	if cover == nil {
+		s.CoverId = &NullInt64{}
+	} else {
+		s.CoverId = &cover.Id
+	}
 }
 
 type Album struct {
@@ -152,7 +161,11 @@ func NewAlbum() *Album {
 
 func (a *Album) SetCover(cover *Image) {
 	a.Cover = cover
-	a.CoverId = &cover.Id
+	if cover == nil {
+		a.CoverId = &NullInt64{}
+	} else {
+		a.CoverId = &cover.Id
+	}
 }
 
 type Artist struct {
@@ -257,7 +270,7 @@ func update(table string, v interface{}, where map[string]interface{}) error {
 	SET ` + strings.Join(columns, ",") + `
 	WHERE ` + strings.Join(wheres, " AND ") + `
 	`
-	log.Debug(query)
+	//log.Debug(query)
 
 	_, err := db.Exec(query, values...)
 	if err != nil {
@@ -278,7 +291,7 @@ func insert(table string, v interface{}) error {
 	INSERT INTO "` + table + `" (` + strings.Join(columns, ",") + `)
 	VALUES (` + strings.Join(strings.Split(strings.Repeat("?", len(columns)), ""), ",") + `)
 	`
-	log.Debug(query)
+	//log.Debug(query)
 
 	r, err := db.Exec(query, values...)
 	if err != nil {
@@ -307,7 +320,7 @@ func find(table string, v interface{}, where map[string]interface{}) (bool, erro
 	}
 
 	query := `SELECT ` + strings.Join(columns, ",") + ` FROM "` + table + `" WHERE ` + strings.Join(wheres, " AND ")
-	log.Debug(query)
+	//log.Debug(query)
 
 	var err error
 	if underLyingType.Kind() == reflect.Slice || underLyingType.Kind() == reflect.Array {
@@ -363,110 +376,76 @@ func (b *Backend) scanFilesystem() {
 
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
-		_, file := filepath.Split(path)
-		s := NewSong()
-		s.Name = file
-		s.Mime = mimeType
-		s.Path = path
-
 		meta, err := probers.ProbeAudioFile("media" + string(filepath.Separator) + path)
 		if err != nil {
-			log.WithFields(log.Fields{"path": path, "reason": err.Error()}).Error("Probing failed.")
-		} else {
-			log.Printf("%+v\n", meta)
+			log.WithFields(log.Fields{"reason": err.Error(), "file": path}).Error("Probing file failed.")
+			return nil
 		}
 
-		mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Couldn't parse id3 tag")
-
-		} else {
-			defer mp3File.Close()
-			s.Name = mp3File.Title()
-			yearRaw := string(bytes.Trim([]byte(mp3File.Year()), "\x00"))
-			year, err := strconv.Atoi(yearRaw)
-			if err == nil {
-				s.Year.Set(int64(year))
-			} else {
-				log.WithFields(log.Fields{"reason": err.Error(), "year": yearRaw}).Debug("Could not parse year.")
-			}
-			s.Genre.Set(mp3File.Genre())
-		}
-
-		if len(mp3File.Artist()) > 0 {
-			artist := &Artist{
-				Name: mp3File.Artist(),
-			}
-
-			if insertIfNotExists("artists", artist, map[string]interface{}{"name": artist.Name}) == nil {
-				s.SetArtist(artist)
-			}
-		}
-
-		if len(mp3File.Album()) > 0 {
-			album := NewAlbum()
-			album.Name = mp3File.Album()
-
-			s.SetAlbum(album)
-		}
-
-		if apic, ok := mp3File.Frame("APIC").(*id3v2.ImageFrame); ok {
-			image := &Image{}
-
-			// Use DetectContentType since it is more reliable than apic.MimeType.
-			if coverMime := http.DetectContentType(apic.Data()); isImage(coverMime) {
-				image.Mime = coverMime
-			} else {
-				goto SkipCover
-			}
-
-			md5Bytes := md5.Sum(apic.Data())
-			image.Hash = hex.EncodeToString(md5Bytes[:])
-
-			if ok, _ := find("images", image, map[string]interface{}{"hash": image.Hash}); !ok {
-				extensions, err := mime.ExtensionsByType(image.Mime)
-				if err != nil {
-					log.WithFields(log.Fields{"reason": err.Error(), "mime": image.Mime, "file": s.Path}).Debug("Failed to guess extension for cover.")
-					goto SkipCover
-				}
-
-				if extensions == nil || len(extensions) == 0 {
-					log.WithFields(log.Fields{"mime": image.Mime, "file": s.Path}).Debug("Failed to guess extension for cover.")
-					goto SkipCover
-				}
-
-				image.Path = "images/" + image.Hash + extensions[0]
-				image.Link = "/images/" + image.Hash + extensions[0]
-				if err := ioutil.WriteFile(image.Path, apic.Data(), 0666); err != nil {
-					log.WithFields(log.Fields{"reason": err.Error(), "path": image.Path}).Error("Failed to store cover.")
-					goto SkipCover
-				}
-
-				insert("images", image)
-			}
-
-			if image.Id.Valid {
-				s.SetCover(image)
-				if s.Album != nil && s.Album.Cover == nil {
-					s.Album.SetCover(image)
+		var cover *Image
+		if meta.CoverBufer != nil {
+			mimeCover := http.DetectContentType(meta.CoverBufer)
+			if isImage(mimeCover) {
+				md5Sum := md5.Sum(meta.CoverBufer)
+				hash := hex.EncodeToString(md5Sum[:])
+				extensions, _ := mime.ExtensionsByType(mimeCover)
+				if extensions != nil && len(extensions) > 0 {
+					destination := "images/" + hash + extensions[0]
+					if err := ioutil.WriteFile(destination, meta.CoverBufer, 0666); err == nil {
+						cover = &Image{
+							Path: destination,
+							Link: destination,
+							Mime: mimeCover,
+							Hash: hash,
+						}
+					} else {
+						log.WithFields(log.Fields{"reason": err.Error(), "destination": destination}).Error("Failed to write cover to disk.")
+					}
 				}
 			}
 		}
-	SkipCover:
 
-		if s.Album != nil {
-			insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name})
-			if !s.Album.Year.Valid && s.Year.Valid {
-				s.Album.Year = s.Year
-				update("albums", s.Album, map[string]interface{}{"id": s.Album.Id})
+		// TODO mime type is also calculated in ProbeAudioFile. Use that one?
+		s := NewSong()
+		s.Name = meta.Title
+		s.Mime = mimeType
+		s.Path = path
+		if cover != nil {
+			s.SetCover(cover)
+			insertIfNotExists("images", s.Cover, map[string]interface{}{"hash": s.Cover.Hash})
+		}
+		if len(meta.Genre) > 0 {
+			s.Genre.Set(meta.Genre)
+		}
+		if meta.Year != 0 {
+			s.Year.Set(int64(meta.Year))
+		}
+		if len(meta.Album) > 0 {
+			s.SetAlbum(&Album{
+				Name: meta.Album,
+				Year: s.Year,
+			})
+
+			s.Album.SetCover(s.Cover)
+
+			if err := insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name}); err != nil {
+				log.WithFields(log.Fields{"reason": err.Error(), "album": s.Album.Name}).Error("Failed to insert album.")
+			}
+		}
+		if len(meta.Artist) > 0 {
+			s.SetArtist(&Artist{
+				Name: meta.Artist,
+			})
+
+			if err := insertIfNotExists("artists", s.Artist, map[string]interface{}{"name": s.Artist.Name}); err != nil {
+				log.WithFields(log.Fields{"reason": err.Error(), "artist": s.Artist.Name}).Error("Failed to insert artist.")
 			}
 		}
 
-		if err := insert("songs", s); err == nil {
-			log.WithFields(log.Fields{"song": s.Name}).Info("Added song.")
-		} else {
-			log.WithFields(log.Fields{"song": s}).Error("Failed to add song.")
+		if err := insert("songs", s); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name}).Error("Failed to insert song.")
 		}
+
 		return nil
 	})
 }
