@@ -104,6 +104,17 @@ type Song struct {
 	Cover    *Image     `json:"cover"`
 }
 
+func NewSong() *Song {
+	s := &Song{
+		// If we leave these nil, we can get a null pointer dereference when trying to insert in database.
+		ArtistId: &NullInt64{},
+		AlbumId:  &NullInt64{},
+		CoverId:  &NullInt64{},
+	}
+
+	return s
+}
+
 func (s *Song) SetArtist(artist *Artist) {
 	s.Artist = artist
 	s.ArtistId = &artist.Id
@@ -127,6 +138,15 @@ type Album struct {
 	Cover   *Image     `json:"cover"`
 
 	Songs []*Song
+}
+
+func NewAlbum() *Album {
+	a := &Album{
+		// If we leave these nil, we can get a null pointer dereference when trying to insert in database.
+		CoverId: &NullInt64{},
+	}
+
+	return a
 }
 
 func (a *Album) SetCover(cover *Image) {
@@ -343,11 +363,10 @@ func (b *Backend) scanFilesystem() {
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
 		_, file := filepath.Split(path)
-		s := &Song{
-			Name: file,
-			Mime: mimeType,
-			Path: path,
-		}
+		s := NewSong()
+		s.Name = file
+		s.Mime = mimeType
+		s.Path = path
 
 		mp3File, err := id3.Open("media" + string(filepath.Separator) + path)
 		if err != nil {
@@ -377,9 +396,8 @@ func (b *Backend) scanFilesystem() {
 		}
 
 		if len(mp3File.Album()) > 0 {
-			album := &Album{
-				Name: mp3File.Album(),
-			}
+			album := NewAlbum()
+			album.Name = mp3File.Album()
 
 			s.SetAlbum(album)
 		}
@@ -428,11 +446,14 @@ func (b *Backend) scanFilesystem() {
 		}
 	SkipCover:
 
-		insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name})
-		if !s.Album.Year.Valid && s.Year.Valid {
-			s.Album.Year = s.Year
-			update("albums", s.Album, map[string]interface{}{"id": s.Album.Id})
+		if s.Album != nil {
+			insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name})
+			if !s.Album.Year.Valid && s.Year.Valid {
+				s.Album.Year = s.Year
+				update("albums", s.Album, map[string]interface{}{"id": s.Album.Id})
+			}
 		}
+
 		if err := insert("songs", s); err == nil {
 			log.WithFields(log.Fields{"song": s.Name}).Info("Added song.")
 		} else {
