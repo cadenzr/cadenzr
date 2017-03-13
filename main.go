@@ -24,7 +24,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	id3 "github.com/mikkyang/id3-go"
 	id3v2 "github.com/mikkyang/id3-go/v2"
-
 )
 
 type NullInt64 struct {
@@ -594,17 +593,16 @@ func main() {
 
 	// Login route
 	e.POST("/login", login)
-	
+
 	// Restricted group
 	r := e.Group("/")
-	
+
 	// Configure middleware with the custom claims type
 	jwtConf := middleware.JWTConfig{
 		Claims:     &jwtCustomClaims{},
 		SigningKey: []byte("secret"),
 	}
 	r.Use(middleware.JWTWithConfig(jwtConf))
-
 
 	r.GET("albums", func(c echo.Context) error {
 		query := `
@@ -621,9 +619,9 @@ func main() {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not fetch albums.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
-	
+
 		results := []map[string]interface{}{}
-	
+
 		for rows.Next() {
 			var id int64
 			var name string
@@ -633,7 +631,7 @@ func main() {
 				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 				return c.NoContent(http.StatusInternalServerError)
 			}
-	
+
 			songs, err := getAlbumSongs(id)
 			if err != nil {
 				return c.NoContent(http.StatusInternalServerError)
@@ -646,10 +644,10 @@ func main() {
 				"songs": songs,
 			})
 		}
-	
+
 		return c.JSON(http.StatusOK, results)
 	})
-	
+
 	r.GET("albums/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		query := `
@@ -662,7 +660,7 @@ func main() {
 			JOIN "images" ON "albums"."cover_id" = "images"."id"
 			WHERE "albums"."id" = ?
 		`
-	
+
 		var name string
 		var year NullInt64
 		var cover NullString
@@ -671,13 +669,13 @@ func main() {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
-	
+
 		songs, err := getAlbumSongs(int64(id))
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not get album songs.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
-	
+
 		result := map[string]interface{}{
 			"id":    id,
 			"name":  name,
@@ -685,27 +683,24 @@ func main() {
 			"cover": cover,
 			"songs": songs,
 		}
-	
+
 		return c.JSON(http.StatusOK, result)
 	})
-	
-	r.GET("songs/:id/stream", func(c echo.Context) error {
+
+	e.GET("songs/:id/stream", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		song := &Song{}
 		ok, err := find("songs", song, map[string]interface{}{"id": id})
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
-	
+
 		if !ok {
 			return c.NoContent(http.StatusNotFound)
 		}
-	
+
 		return c.File(filepath.Join(backend.path, song.Path))
 	})
-	
-	
-	
 
 	e.Logger.Fatal(e.Start(config.Hostname + ":" + strconv.Itoa(int(config.Port))))
 }
