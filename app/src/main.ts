@@ -46,14 +46,40 @@ export var router = new Router({
 router.beforeEach(function (to, from, next) {
     console.log(to);
     console.log(testAuth);
-    if (to.meta.requiresAuth && !testAuth.authenticated) {
-        // if route requires auth and user isn't authenticated
-        console.log("Not logged in");
-        next('/login')
-    } else {
-        console.log("Logged in");
-        next()
+    
+    if(testAuth.ready) {
+        console.log("auth ready")
+        
+        if (to.meta.requiresAuth && !testAuth.authenticated) {
+            // if route requires auth and user isn't authenticated
+            console.log("Not logged in");
+            next('/login')
+        } else {
+            console.log("Logged in");
+            next()
+        }
+
     }
+    else {
+        
+        console.log("auth not ready")
+        
+        new Promise(function(resolve, reject) {
+            testAuth.checkLocalStorage();
+            resolve("checkLocalStorage");
+        }).then(function() {
+            if (to.meta.requiresAuth && !testAuth.authenticated) {
+                // if route requires auth and user isn't authenticated
+                console.log("Not logged in");
+                next('/login')
+            } else {
+                console.log("Logged in");
+                next()
+            }
+        });
+    }
+    
+    
 })
 
 var app = new Vue({
@@ -73,46 +99,6 @@ var app = new Vue({
             return testAuth;
         }
     },
-    methods: {
-        checkLocalStorage: function() {
-            //console.log(localStorage)
-            if (localStorage.user) {
-                
-                
-                this.user = JSON.parse(localStorage.user);
-                
-                
-                if (this.jwtValid(this.user.token)) {
-                    // Valid token
-                    Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
-                    testAuth.authenticated = true;
-                }
-                else {
-                    // Expired token
-                    console.log("JWT expired");
-                    Auth.logout();
-                }
-            }
-        },
-        jwtValid: function(token) {
-            let jwt_decode = require('jwt-decode');
-            var decoded = jwt_decode(token);
-            console.log(decoded);
-            
-            return (decoded.exp >= Date.now() / 1000);
-        },
-        logout: function() {
-            this.user = {};
-            Auth.logout();
-        }
-    },
-    created: function() {
-        var self = this
-        testAuth.test = "gataap";
-        testAuth.ready = true;
-        console.log("mounted");
-        new Promise(function() {self.checkLocalStorage()}).then(function() {testAuth.ready = true;});
-    }
 });
 
 Vue.http.options.emulateJSON = true;

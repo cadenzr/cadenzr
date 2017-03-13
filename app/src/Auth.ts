@@ -1,32 +1,17 @@
 import {router} from './main'
+import * as Vue from 'vue';
 
 export default {
 
     // authentication status
     authenticated: false,
     ready:         false,
+    user:          undefined,
 
     // Send a request to the login URL and save the returned JWT
 
     login(context, creds, redirect) {
-        /*
-        context.$http.post('/login', creds, (data) => {
-            localStorage.setItem('user', JSON.stringify(data))
 
-            this.authenticated = true
-            context.$root.user = data
-
-            // Redirect to a specified route
-            if (redirect) {
-                router.go(redirect)
-            }
-
-            console.log("post");
-
-            }).error((errors) => {
-                context.errors = errors;
-            })
-            */
         context.$http.post('/login', creds).then(response => {
         
                 // get body data
@@ -52,6 +37,39 @@ export default {
             console.log(response);
           });
 
+    },
+    
+    checkLocalStorage() {
+        
+        //console.log(localStorage)
+        if (localStorage.user) {
+            
+            
+            this.user = JSON.parse(localStorage.user);
+            
+            
+            if (this.jwtValid(this.user.token)) {
+                // Valid token
+                Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
+                this.authenticated = true;
+            }
+            else {
+                // Expired token
+                console.log("JWT expired");
+                this.logout();
+            }
+            
+            this.ready = true;
+        }
+        
+    },
+    
+    jwtValid(token) {
+        let jwt_decode = require('jwt-decode');
+        var decoded = jwt_decode(token);
+        console.log(decoded);
+        
+        return (decoded.exp >= Date.now() / 1000);
     },
 
     // To log out

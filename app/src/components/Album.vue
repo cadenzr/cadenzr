@@ -71,7 +71,8 @@
                 },
               loadSongs: function(){
                   let self = this
-                  $.getJSON( "/albums/" + self.$route.params.id, function(data) {
+                  this.$http.get( "/albums/" + self.$route.params.id).then(response => {
+                      let data = response.body
                       data.songs = _.map(data.songs, (song) => {
                           return new Song(song);
                       });
