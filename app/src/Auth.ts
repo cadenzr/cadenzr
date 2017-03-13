@@ -6,16 +6,15 @@ export default {
     // authentication status
     authenticated: false,
     ready:         false,
-    user:          undefined,
+    user:          false,
 
     // Send a request to the login URL and save the returned JWT
-    login(context, creds, redirect) {
+    login(context: any, creds: any, redirect: string) {
 
         context.$http.post('/login', creds).then(response => {
         
                 // get body data
                 localStorage.setItem('user', JSON.stringify(response.data))
-                console.log(response.data)
             
                 Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
                 
@@ -60,7 +59,7 @@ export default {
     },
     
     // Check if JWT expired.
-    jwtValid(token) {
+    jwtValid(token: string) {
         let jwt_decode = require('jwt-decode');
         let decoded = jwt_decode(token);
         
