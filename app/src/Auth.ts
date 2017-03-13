@@ -1,6 +1,6 @@
 import {router} from './main'
 import * as Vue from 'vue';
-import {jwt_decode} from 'jwt-decode';
+import * as jwt_decode from 'jwt-decode';
 
 export default {
 

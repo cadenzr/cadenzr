@@ -1,11 +1,12 @@
 package main
 
 import (
-	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/cadenzr/cadenzr/log"
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo"
 )
 
 // jwtCustomClaims are custom claims extending default ones.

@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Cadenzr/Cadenzr/transcoders"
+	"github.com/cadenzr/cadenzr/transcoders"
 
 	"github.com/cadenzr/cadenzr/log"
 	"github.com/cadenzr/cadenzr/probers"

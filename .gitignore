@@ -1,5 +1,6 @@
 .DS_Store
-Cadenzr
+cadenzr
 app/.sass-cache/
 app/style.css.map
 config.json
+*.sqlite
