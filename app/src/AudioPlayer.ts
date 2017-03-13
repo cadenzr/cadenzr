@@ -52,6 +52,10 @@ class AudioPlayer {
             PubSub.publish(events.VolumeChanged, self.audioEl.volume * 100);
         });
 
+        this.audioEl.addEventListener('ended', () => {
+            self.next();
+        });
+
         this.setVolume(30);
 
         document.body.appendChild(this.audioEl);
