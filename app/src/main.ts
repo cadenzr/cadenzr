@@ -89,5 +89,5 @@ var app = new Vue({
     },
 });
 
-Vue.http.options.emulateJSON = true;
+(<any>Vue).http.options.emulateJSON = true;
 

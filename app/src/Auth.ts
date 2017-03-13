@@ -1,5 +1,6 @@
 import {router} from './main'
 import * as Vue from 'vue';
+import {jwt_decode} from 'jwt-decode';
 
 export default {
 
@@ -11,12 +12,12 @@ export default {
     // Send a request to the login URL and save the returned JWT
     login(context: any, creds: any, redirect: string) {
 
-        context.$http.post('/login', creds).then(response => {
+        context.$http.post('/login', creds).then((response : any) => {
         
                 // get body data
-                localStorage.setItem('user', JSON.stringify(response.data))
+                localStorage.setItem('user', JSON.stringify(response.data));
             
-                Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
+                (<any>Vue).http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
                 
                 this.authenticated = true
                 this.user = response.data
@@ -28,7 +29,7 @@ export default {
                 
 
         
-          }, response => {
+          }, (response : any) => {
             // error callback
             console.log("error");
             console.log(response);
@@ -44,7 +45,7 @@ export default {
             
             if (this.jwtValid(this.user.token)) {
                 // Valid token
-                Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
+                (<any>Vue).http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
                 this.authenticated = true;
             }
             else {
@@ -60,7 +61,6 @@ export default {
     
     // Check if JWT expired.
     jwtValid(token: string) {
-        let jwt_decode = require('jwt-decode');
         let decoded = jwt_decode(token);
         
         return (decoded.exp >= Date.now() / 1000);
