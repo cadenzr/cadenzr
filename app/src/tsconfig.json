@@ -6,6 +6,7 @@
         "removeComments": true,
         "preserveConstEnums": true,
         "sourceMap": true,
+        "suppressExcessPropertyErrors": true,
         "types": ["vue-typescript-import-dts"],
         "lib": [
             "dom",

@@ -20,6 +20,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -523,12 +524,12 @@ var db *sqlx.DB
 func createSchema() {
 	schema, err := ioutil.ReadFile("./schema.sql")
 	if err != nil {
-		panic("Could not load schema file: " + err.Error())
+		log.Fatalln("Could not load schema file: " + err.Error())
 	}
 
 	_, err = db.Exec(string(schema))
 	if err != nil {
-		panic("Failed to create schema: " + err.Error())
+		log.Fatalln("Failed to create schema: " + err.Error())
 	}
 
 	log.WithFields(log.Fields{"database": config.Database}).Info("Created database.")
@@ -542,7 +543,7 @@ func loadDatabase() {
 	var err error
 	db, err = sqlx.Open("sqlite3", config.Database)
 	if err != nil {
-		panic("Could not open database: " + err.Error())
+		log.Fatalln("Could not open database: " + err.Error())
 	}
 
 	createSchema()
@@ -653,7 +654,20 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
-	e.GET("/albums", func(c echo.Context) error {
+	// Login route
+	e.POST("/login", login)
+
+	// Restricted group
+	r := e.Group("/")
+
+	// Configure middleware with the custom claims type
+	jwtConf := middleware.JWTConfig{
+		Claims:     &jwtCustomClaims{},
+		SigningKey: []byte("secret"),
+	}
+	r.Use(middleware.JWTWithConfig(jwtConf))
+
+	r.GET("albums", func(c echo.Context) error {
 		query := `
 			SELECT
 				"albums"."id" as id,
@@ -697,7 +711,7 @@ func main() {
 		return c.JSON(http.StatusOK, results)
 	})
 
-	e.GET("/albums/:id", func(c echo.Context) error {
+	r.GET("albums/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		query := `
 			SELECT
@@ -726,7 +740,7 @@ func main() {
 		return c.JSON(http.StatusOK, album)
 	})
 
-	e.GET("/songs/:id/stream", func(c echo.Context) error {
+	e.GET("songs/:id/stream", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		song := &Song{}
 		ok, err := find("songs", song, map[string]interface{}{"id": id})
