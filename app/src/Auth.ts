@@ -31,6 +31,7 @@ export default {
           }, response => {
             // error callback
             console.log("error");
+            context.error = "Couldn't login. Check your credentials";
             console.log(response);
           });
 
