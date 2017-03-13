@@ -96,3 +96,7 @@ func WithError(err error) *logrus.Entry {
 func SetLevel(level Level) {
 	logger.Level = (logrus.Level(level))
 }
+
+func Fatalln(format string) {
+	logger.Fatalln(format)
+}

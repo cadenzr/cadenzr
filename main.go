@@ -15,8 +15,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Cadenzr/Cadenzr/log"
-	"github.com/Cadenzr/Cadenzr/probers"
+	"github.com/cadenzr/cadenzr/log"
+	"github.com/cadenzr/cadenzr/probers"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/labstack/echo"

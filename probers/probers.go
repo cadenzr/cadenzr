@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strconv"
 
-	log "github.com/Cadenzr/Cadenzr/log"
+	log "github.com/cadenzr/cadenzr/log"
 	id3 "github.com/mikkyang/id3-go"
 	id3v2 "github.com/mikkyang/id3-go/v2"
 )

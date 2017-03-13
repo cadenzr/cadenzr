@@ -17,9 +17,10 @@ export default {
                 localStorage.setItem('user', JSON.stringify(response.data))
                 console.log(response.data)
             
+                Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
                 
                 this.authenticated = true
-                context.$root.user = response.data
+                this.user = response.data
                 
                 // Redirect to a specified route
                 if (redirect) {
