@@ -29,7 +29,7 @@ PubSub.subscribe(AudioPlayerEvents.SongChanged, (song: Song) => {
 });
 
 
-export var testAuth = Auth;
+export var authentication = Auth;
 
 export var router = new Router({
     routes: [
@@ -44,41 +44,29 @@ export var router = new Router({
 
 
 router.beforeEach(function (to, from, next) {
-    console.log(to);
-    console.log(testAuth);
     
-    if(testAuth.ready) {
-        console.log("auth ready")
-        
-        if (to.meta.requiresAuth && !testAuth.authenticated) {
+    if(authentication.ready) {
+        if (to.meta.requiresAuth && !authentication.authenticated) {
             // if route requires auth and user isn't authenticated
-            console.log("Not logged in");
             next('/login')
         } else {
-            console.log("Logged in");
             next()
         }
-
     }
-    else {
-        
-        console.log("auth not ready")
-        
+    else {        
+        // Wait until auth is initialized
         new Promise(function(resolve, reject) {
-            testAuth.checkLocalStorage();
+            authentication.checkLocalStorage();
             resolve("checkLocalStorage");
         }).then(function() {
-            if (to.meta.requiresAuth && !testAuth.authenticated) {
+            if (to.meta.requiresAuth && !authentication.authenticated) {
                 // if route requires auth and user isn't authenticated
-                console.log("Not logged in");
                 next('/login')
             } else {
-                console.log("Logged in");
                 next()
             }
         });
-    }
-    
+    }  
     
 })
 
@@ -96,7 +84,7 @@ var app = new Vue({
     },
     computed: {
         auth: function() {
-            return testAuth;
+            return authentication;
         }
     },
 });

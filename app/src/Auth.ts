@@ -9,7 +9,6 @@ export default {
     user:          undefined,
 
     // Send a request to the login URL and save the returned JWT
-
     login(context, creds, redirect) {
 
         context.$http.post('/login', creds).then(response => {
@@ -23,9 +22,7 @@ export default {
                 context.$root.user = response.data
                 
                 // Redirect to a specified route
-                alert(redirect);
                 if (redirect) {
-                    console.log(redirect);
                     router.push(redirect)
                 }
                 
@@ -39,14 +36,11 @@ export default {
 
     },
     
+    // Check if JWT found in local storage
     checkLocalStorage() {
         
-        //console.log(localStorage)
         if (localStorage.user) {
-            
-            
-            this.user = JSON.parse(localStorage.user);
-            
+            this.user = JSON.parse(localStorage.user);     
             
             if (this.jwtValid(this.user.token)) {
                 // Valid token
@@ -64,18 +58,18 @@ export default {
         
     },
     
+    // Check if JWT expired.
     jwtValid(token) {
         let jwt_decode = require('jwt-decode');
-        var decoded = jwt_decode(token);
-        console.log(decoded);
+        let decoded = jwt_decode(token);
         
         return (decoded.exp >= Date.now() / 1000);
     },
 
     // To log out
-    logout: function() {
+    logout() {
         localStorage.removeItem('user');
         this.authenticated = false;
-        router.go('/login')
+        router.push('/login')
     }
 }

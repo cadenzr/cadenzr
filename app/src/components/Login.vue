@@ -1,5 +1,4 @@
 <!-- src/components/Login.vue -->
-
 <template>
   <div class="col-sm-4 col-sm-offset-4">
     <h2>Log In</h2>
@@ -48,9 +47,6 @@ export default {
         username: this.credentials.username,
         password: this.credentials.password
       }
-      // We need to pass the component's this context
-      // to properly make use of http in the auth service
-      console.log(this.$parent.auth);
       this.$parent.auth.login(this, credentials, '/albums')
     }
   }
