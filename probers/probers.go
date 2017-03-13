@@ -1,9 +1,14 @@
-package prober
+package probers
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"strconv"
+
+	log "github.com/Cadenzr/Cadenzr/log"
+	id3 "github.com/mikkyang/id3-go"
 )
 
 type AudioMeta struct {
@@ -14,6 +19,7 @@ type AudioMeta struct {
 	TotalTracks int
 	Year        int
 	AlbumArtist string
+	Genre       string
 }
 
 func parseInt(s string) int {
@@ -24,11 +30,13 @@ func parseInt(s string) int {
 type AudioProber interface {
 	// Probe Only returns nil if there was an error.
 	ProbeAudio(file string) (*AudioMeta, error)
+
+	fmt.Stringer
 }
 
-type ffAudioProber struct{}
+type ffprobeAudioProber struct{}
 
-func (f *ffAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
+func (f *ffprobeAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
 	ffprobe, err := exec.LookPath("ffprobe")
 	if err != nil {
 		return
@@ -84,9 +92,83 @@ func (f *ffAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
 	return
 }
 
+func (p *ffprobeAudioProber) hasFFprobe() bool {
+	_, err := exec.LookPath("ffprobe")
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (p *ffprobeAudioProber) String() string {
+	return "ffprobeAudioProber"
+}
+
+type id3AudioProber struct{}
+
+func (p *id3AudioProber) cleanString(s string) string {
+	// Something with macos?
+	return string(bytes.Trim([]byte(s), "\x00"))
+}
+
+func (p *id3AudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
+	id3f, err := id3.Open(file)
+	if err != nil {
+		return
+	}
+	defer id3f.Close()
+
+	meta = &AudioMeta{}
+	meta.Title = p.cleanString(id3f.Title())
+	meta.Year = parseInt(p.cleanString(id3f.Year()))
+	meta.Genre = p.cleanString(id3f.Genre())
+	meta.Artist = p.cleanString(id3f.Artist())
+	meta.Album = p.cleanString(id3f.Album())
+
+	return
+}
+
+func (p *id3AudioProber) String() string {
+	return "id3Prober"
+}
+
+type prober struct {
+	Mime    string
+	Probers []AudioProber
+}
+
+var probers = []*prober{}
+
+func Initialize() {
+	id3Prober := &id3AudioProber{}
+	ffProber := &ffprobeAudioProber{}
+
+	probers = append(probers, &prober{
+		Mime: "audio/(mpeg|mp3)",
+		Probers: []AudioProber{
+			id3Prober,
+		},
+	})
+
+	if ffProber.hasFFprobe() {
+		probers = append(probers, &prober{
+			Mime: "audio/.*",
+			Probers: []AudioProber{
+				ffProber,
+			},
+		})
+	}
+
+	for _, prober := range probers {
+		log.Infof("Registered probes for '%s': %s", prober.Mime, prober.Probers)
+	}
+
+}
+
 // ProbeAudioFile Probes a file and tries to fill in AudioMeta.
 // meta is not nil if there was no error.
 func ProbeAudioFile(file string) (meta *AudioMeta, err error) {
-	ffprober := &ffAudioProber{}
+	ffprober := &ffprobeAudioProber{}
 	return ffprober.ProbeAudio(file)
 }

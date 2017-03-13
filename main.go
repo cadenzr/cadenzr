@@ -16,14 +16,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Cadenzr/Cadenzr/log"
+	"github.com/Cadenzr/Cadenzr/probers"
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/labstack/echo"
 	_ "github.com/mattn/go-sqlite3"
 	id3 "github.com/mikkyang/id3-go"
 	id3v2 "github.com/mikkyang/id3-go/v2"
-	"github.com/trtstm/Cadenzr/prober"
 )
 
 type NullInt64 struct {
@@ -369,7 +369,7 @@ func (b *Backend) scanFilesystem() {
 		s.Mime = mimeType
 		s.Path = path
 
-		meta, err := prober.ProbeAudioFile("media" + string(filepath.Separator) + path)
+		meta, err := probers.ProbeAudioFile("media" + string(filepath.Separator) + path)
 		if err != nil {
 			log.WithFields(log.Fields{"path": path, "reason": err.Error()}).Error("Probing failed.")
 		} else {
@@ -656,6 +656,7 @@ func main() {
 	}
 	log.SetLevel(logLevel)
 
+	probers.Initialize()
 	loadDatabase()
 
 	backend := NewBackend()
