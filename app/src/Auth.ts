@@ -4,6 +4,7 @@ export default {
 
     // authentication status
     authenticated: false,
+    ready:         false,
 
     // Send a request to the login URL and save the returned JWT
 

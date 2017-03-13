@@ -75,23 +75,43 @@ var app = new Vue({
     },
     methods: {
         checkLocalStorage: function() {
-            console.log(localStorage)
+            //console.log(localStorage)
             if (localStorage.user) {
-                console.log(localStorage.user)
+                
+                
                 this.user = JSON.parse(localStorage.user);
-                Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
-                testAuth.authenticated = true;
+                
+                
+                if (this.jwtValid(this.user.token)) {
+                    // Valid token
+                    Vue.http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
+                    testAuth.authenticated = true;
+                }
+                else {
+                    // Expired token
+                    console.log("JWT expired");
+                    Auth.logout();
+                }
             }
+        },
+        jwtValid: function(token) {
+            let jwt_decode = require('jwt-decode');
+            var decoded = jwt_decode(token);
+            console.log(decoded);
+            
+            return (decoded.exp >= Date.now() / 1000);
         },
         logout: function() {
             this.user = {};
             Auth.logout();
         }
     },
-    mounted: function() {
+    created: function() {
+        var self = this
         testAuth.test = "gataap";
+        testAuth.ready = true;
         console.log("mounted");
-        this.checkLocalStorage();
+        new Promise(function() {self.checkLocalStorage()}).then(function() {testAuth.ready = true;});
     }
 });
 

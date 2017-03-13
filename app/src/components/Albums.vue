@@ -52,17 +52,20 @@
                         this.sortOrder = 'asc';
                     }
                 },
-              loadAlbums: function(){
-                  let self = this
-                  $.getJSON( "/albums", function(data) {
+                loadAlbums: function(){
+                    let self = this
+                    this.$http.get( "/albums").then(response => {
+                        let data = response.body
                         self.albums = _.map(data, (album) => {
                             album.link = 'albums/' + album.id;
                             return new Album(album);
                         });
 
                         self.show = true;
-                  });
-              }
+                    }, response => {
+                        // error callback
+                    });
+                }
             }
     };
 </script>
