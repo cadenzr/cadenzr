@@ -1,28 +1,25 @@
 <!-- src/components/Login.vue -->
 <template>
-  <div class="col-sm-4 col-sm-offset-4">
-    <h2>Log In</h2>
-    <p>Log in to your account to get some great quotes.</p>
-    <div class="alert alert-danger" v-if="error">
+  <div class="login">
+    <p class="error" v-if="error">
       <p>{{ error }}</p>
-    </div>
-    <div class="form-group">
-      <input
-        type="text"
-        class="form-control"
-        placeholder="Enter your username"
-        v-model="credentials.username"
-      >
-    </div>
-    <div class="form-group">
-      <input
-        type="password"
-        class="form-control"
-        placeholder="Enter your password"
-        v-model="credentials.password"
-      >
-    </div>
-    <button class="btn btn-primary" @click="submit()">Access</button>
+    </p>
+    <form method="post" class="pure-form pure-form-stacked" @submit.prevent="submit">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Username"
+          v-model="credentials.username"
+        >
+        <input
+          type="password"
+          class="form-control"
+          placeholder="Password"
+          v-model="credentials.password"
+        >
+      <p><input type="submit" value="Login" class="pure-button"></p>
+    </form>
+    
   </div>
 </template>
 
