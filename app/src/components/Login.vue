@@ -1,9 +1,9 @@
 <!-- src/components/Login.vue -->
 <template>
   <div class="login">
-    <p class="error" v-if="error">
-      <p>{{ error }}</p>
-    </p>
+    <div class="error">
+      <p v-if="error"><span class="fa fa-warning"></span> {{ error }}</p>
+    </div>
     <form method="post" class="pure-form pure-form-stacked" @submit.prevent="submit">
         <input
           type="text"
