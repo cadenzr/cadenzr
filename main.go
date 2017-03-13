@@ -14,6 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/Cadenzr/Cadenzr/transcoders"
 
 	"github.com/Cadenzr/Cadenzr/log"
 	"github.com/Cadenzr/Cadenzr/probers"
@@ -100,6 +103,7 @@ type Song struct {
 	Path     string     `json:"-" db:"path"`
 	CoverId  *NullInt64 `db:"cover_id"`
 	Cover    *Image     `json:"cover"`
+	Hash     string     `db:"hash"`
 }
 
 func NewSong() *Song {
@@ -186,19 +190,12 @@ type Backend struct {
 	nextSongId  uint32
 	nextAlbumId uint32
 
-	path   string
 	albums map[uint32]*Album
 	songs  map[uint32]*Song // Songs that do not belong to any albums.
 }
 
 func NewBackend() *Backend {
-	return &Backend{
-		nextSongId:  1,
-		nextAlbumId: 1,
-		path:        "./media",
-		albums:      map[uint32]*Album{},
-		songs:       map[uint32]*Song{},
-	}
+	return &Backend{}
 }
 
 func getSQLColumns(v interface{}) (columns []string) {
@@ -355,9 +352,8 @@ func insertIfNotExists(table string, v interface{}, exists map[string]interface{
 
 func (b *Backend) scanFilesystem() {
 
-	filepath.Walk(b.path, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk("media", func(path string, info os.FileInfo, err error) error {
 		// Remove our base directory.
-		path = path[strings.IndexRune(path, filepath.Separator)+1:]
 
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to handle file/dir.")
@@ -376,7 +372,7 @@ func (b *Backend) scanFilesystem() {
 
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
-		meta, err := probers.ProbeAudioFile("media" + string(filepath.Separator) + path)
+		meta, err := probers.ProbeAudioFile(path)
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "file": path}).Error("Probing file failed.")
 			return nil
@@ -405,11 +401,20 @@ func (b *Backend) scanFilesystem() {
 			}
 		}
 
+		contents, err := ioutil.ReadFile(path)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to open song.")
+			return nil
+		}
+
+		md5sum := md5.Sum(contents)
+
 		// TODO mime type is also calculated in ProbeAudioFile. Use that one?
 		s := NewSong()
 		s.Name = meta.Title
 		s.Mime = mimeType
 		s.Path = path
+		s.Hash = hex.EncodeToString(md5sum[:])
 		if cover != nil {
 			s.SetCover(cover)
 			insertIfNotExists("images", s.Cover, map[string]interface{}{"hash": s.Cover.Hash})
@@ -738,7 +743,35 @@ func main() {
 			return c.NoContent(http.StatusNotFound)
 		}
 
-		return c.File(filepath.Join(backend.path, song.Path))
+		codec := strings.ToLower(c.QueryParam("codec"))
+
+		transcode := false
+		var targetCodec transcoders.CodecType
+		switch codec {
+		case "mp3":
+			targetCodec = transcoders.MP3
+			transcode = true
+		case "vorbis":
+			targetCodec = transcoders.VORBIS
+			transcode = true
+		}
+
+		var streamer Streamer
+		if transcode {
+			streamer, err = NewTranscodeStreamer(song, targetCodec)
+		} else {
+			streamer, err = NewFileStreamer(song.Path)
+		}
+
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not create streamer.")
+			return c.NoContent(http.StatusNotFound)
+		}
+
+		defer streamer.Close()
+
+		http.ServeContent(c.Response(), c.Request(), song.Name, time.Time{}, streamer)
+		return nil
 	})
 
 	e.Logger.Fatal(e.Start(config.Hostname + ":" + strconv.Itoa(int(config.Port))))
