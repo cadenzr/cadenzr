@@ -448,7 +448,7 @@ func (b *Backend) scanFilesystem() {
 			}
 		}
 
-		if err := insert("songs", s); err != nil {
+		if err := insertIfNotExists("songs", s, map[string]interface{}{"hash": s.Hash}); err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name}).Error("Failed to insert song.")
 		} else {
 			log.WithFields(log.Fields{"song": s.Name}).Info("Song added.")
