@@ -54,6 +54,7 @@ class Api {
             })
             .fail((response) => {
                 console.log('Api::getAlbums failed.');
+                this.checkUnauthorized(response);
                 if(response.responseJSON) {
                     reject(response.responseJSON);
                 } else {
@@ -80,6 +81,7 @@ class Api {
             })
             .fail((response) => {
                 console.log('Api::getAlbum failed.');
+                this.checkUnauthorized(response);
                 if(response.responseJSON) {
                     reject(response.responseJSON);
                 } else {
@@ -121,6 +123,12 @@ class Api {
 
     private setToken(xhr: JQueryXHR) {
         xhr.setRequestHeader('Authorization', 'Bearer ' + this.retrieveToken());
+    }
+
+    private checkUnauthorized(response: any) {
+        if(response.status === 401) {
+            this.logout();
+        }
     }
 
 
