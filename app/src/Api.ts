@@ -97,6 +97,7 @@ class Api {
         let p = new Promise<any>((resolve, reject) => {
             let decoded = jwt_decode(this.retrieveToken());
             return resolve({
+                id: decoded.id,
                 username: decoded.username,
             });
         });

@@ -13,6 +13,7 @@ import (
 
 // jwtCustomClaims are custom claims extending default ones.
 type jwtCustomClaims struct {
+	Id       int32  // json only supports 32bit?
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
@@ -33,8 +34,9 @@ func login(c echo.Context) error {
 	if ok {
 		// Set custom claims
 		claims := &jwtCustomClaims{
-			user.Username,
-			jwt.StandardClaims{
+			Id:       int32(user.Id.Int64),
+			Username: user.Username,
+			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
 			},
 		}
