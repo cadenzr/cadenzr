@@ -44,6 +44,7 @@
     let Song = require('./../Song').default;
     let Album = require('./../Album').default;
     let AudioPlayer = require('./../AudioPlayer').default;
+    let Api = require('./../Api').default;
 
     module.exports = {
             data: function () {
@@ -74,13 +75,12 @@
                 },
               loadSongs: function(){
                   let self = this
-                  this.$http.get( "/api/albums/" + self.$route.params.id).then(response => {
-                      let data = response.body
-                      data.songs = _.map(data.songs, (song) => {
+                  Api.getAlbum(self.$route.params.id).then(album => {
+                      album.songs = _.map(album.songs, (song) => {
                           return new Song(song);
                       });
 
-                      self.album = new Album(data);
+                      self.album = new Album(album);
                       self.show = true;
                   });
               },

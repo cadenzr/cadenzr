@@ -31,7 +31,7 @@
         <nav>
             <ul v-if="login">
                 <li>
-                    <span class="fa fa-fw fa-user-circle-o"></span> {{name}}
+                    <span class="fa fa-fw fa-user-circle-o"></span> {{me.username}}
                 </li>
                 <li>
                     <a @click="logout">
@@ -49,33 +49,44 @@
 <script>
     
 let PubSub = require('./../PubSub').default;
-let AuthEvents = require('./../Auth').events;
+let Api = require('./../Api').default;
+let ApiEvents = require('./../Api').events;
 
 export default {
   data() {
-      console.log(this.$parent.auth.authenticated);
     return {
       // We need to initialize the component with any
       // properties that will be used in it
-      login: this.$parent.auth.authenticated,
-      name: this.$parent.auth.name,
+      login: Api.isAuthenticated(),
+      me: {},
       subscriptions: [],
     }
   },
   methods: {
       logout: function() {
-          this.$parent.auth.logout();
+          //this.$parent.auth.logout();
+          Api.logout();
       }
   },
   mounted: function () {
-      let self = this;
-  
-      self.subscriptions.push(PubSub.subscribe(AuthEvents.LoggedIn, () => {
-          self.login = true;
-      }));
-      self.subscriptions.push(PubSub.subscribe(AuthEvents.LoggedOut, () => {
-          self.login = false;
-      }));
+        let self = this;
+        self.subscriptions.push(PubSub.subscribe(ApiEvents.Authenticated, () => {
+            self.login = true;
+            Api.getMe()
+            .then((me) => {
+                self.me = me;
+            });
+            self.$forceUpdate();
+        }));
+        self.subscriptions.push(PubSub.subscribe(ApiEvents.LoggedOut, () => {
+            self.login = false;
+            self.$forceUpdate();
+        }));
+
+        Api.getMe()
+        .then((me) => {
+            self.me = me;
+        });
   },
   beforeDestroy: function () {
       _.forEach(this.subscriptions, (s) => {

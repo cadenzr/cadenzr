@@ -4,11 +4,9 @@
 import * as Vue from 'vue';
 import * as Router from 'vue-router';
 import * as VueResource from 'vue-resource';
+import * as _ from 'lodash';
 Vue.use(VueResource)
 Vue.use(Router);
-
-// authentication service
-import Auth from './Auth';
 
 import * as AudioPlayerComponent from './components/AudioPlayer.vue';
 import * as AlbumsComponent from './components/Albums.vue';
@@ -20,7 +18,9 @@ import * as SidebarComponent from './components/Sidebar.vue';
 
 import './AudioPlayer';
 import Song from './Song';
+import Api from './Api';
 import {events as AudioPlayerEvents} from './AudioPlayer';
+import {events as ApiEvents} from './Api';
 
 import Notifier from './Notifier';
 import PubSub from './PubSub';
@@ -28,9 +28,6 @@ import PubSub from './PubSub';
 PubSub.subscribe(AudioPlayerEvents.SongChanged, (song: Song) => {
     Notifier.notify('Playing song: ' + song.name);
 });
-
-
-export var authentication = Auth;
 
 export var router = new Router({
     routes: [
@@ -45,30 +42,17 @@ export var router = new Router({
 
 
 router.beforeEach(function (to, from, next) {
-    
-    if(authentication.ready) {
-        if (to.meta.requiresAuth && !authentication.authenticated) {
-            // if route requires auth and user isn't authenticated
-            next('/login')
-        } else {
-            next()
-        }
+    if(to.meta.requiresAuth && !Api.isAuthenticated()) {
+        next('/login');
+        return;
     }
-    else {        
-        // Wait until auth is initialized
-        new Promise(function(resolve, reject) {
-            authentication.checkLocalStorage();
-            resolve("checkLocalStorage");
-        }).then(function() {
-            if (to.meta.requiresAuth && !authentication.authenticated) {
-                // if route requires auth and user isn't authenticated
-                next('/login')
-            } else {
-                next()
-            }
-        });
-    }  
-    
+
+    if(to.path === '/login' && Api.isAuthenticated()) {
+        next('/');
+        return;
+    }
+
+    return next();
 })
 
 var app = new Vue({
@@ -81,15 +65,21 @@ var app = new Vue({
         'current-queue': CurrentQueueComponent,
         'Sidebar': SidebarComponent,
     },
-    data: function() {
-        return { user: {} };
+    mounted: function() {
+        let self = this;
+        (<any>this).subscriptions.push(PubSub.subscribe(ApiEvents.LoggedOut, () => {
+            (<any>self).$router.go('/login');
+        }));
     },
-    computed: {
-        auth: function() {
-            return authentication;
-        }
+    beforeDestroy: () => {
+        _.forEach(this.subscriptions, (s) => {
+            PubSub.unsubscribe(s);
+        });
+    },
+    data: function() {
+        return { 
+            user: {},
+            subscriptions: [],
+        };
     },
 });
-
-(<any>Vue).http.options.emulateJSON = true;
-

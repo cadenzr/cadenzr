@@ -9,5 +9,10 @@
   "database": "file::memory:?mode=memory&cache=shared",
   // The log level. debug,info,warn,error
   // Defaults to info.
-  "log_level": "info"
+  "log_level": "info",
+  // Username of admin. Defaults to admin.
+  "username": "admin",
+  // Password of admin.
+  // Defaults to ""
+  "password": "password"
 }

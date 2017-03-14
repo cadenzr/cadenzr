@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
@@ -184,6 +185,12 @@ type Image struct {
 	Link string    `db:"link"`
 	Mime string    `db:"mime"`
 	Hash string    `db:"hash"`
+}
+
+type User struct {
+	Id       NullInt64 `db:"id"`
+	Username string    `db:"username"`
+	Password string    `db:"password"`
 }
 
 type Backend struct {
@@ -492,6 +499,8 @@ type Config struct {
 	Port     uint32 `json:"port"`
 	Database string `json:"database"`
 	LogLevel string `json:"log_level"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 var config = Config{}
@@ -521,6 +530,11 @@ func loadConfig() {
 	case "error":
 	default:
 		config.LogLevel = "info"
+	}
+
+	if len(config.Username) == 0 {
+		config.Username = "admin"
+		config.Password = ""
 	}
 }
 
@@ -552,6 +566,27 @@ func loadDatabase() {
 	}
 
 	createSchema()
+
+	// Initialize admin user.
+	shaSum := sha256.Sum256([]byte(config.Password))
+	hash := hex.EncodeToString(shaSum[:])
+	user := &User{
+		Username: config.Username,
+	}
+
+	if ok, _ := find("users", user, map[string]interface{}{"username": user.Username}); ok && user.Password == hash {
+		// update password if already exists.
+		user.Password = hash
+		if err := update("users", user, map[string]interface{}{"username": user.Username}); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to update user password.")
+		}
+	} else {
+		user.Password = hash
+		if err := insert("users", user); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to create admin user.")
+		}
+	}
+
 }
 
 type SongResponse struct {
@@ -573,6 +608,11 @@ type AlbumResponse struct {
 	Year  NullInt64       `db:"year" jsosn:"year"`
 	Cover NullString      `db:"cover" json:"cover"`
 	Songs []*SongResponse `json:"songs"`
+}
+
+type UserResponse struct {
+	Id       int64  `db:"id" json:"id"`
+	Username string `db:"username" json:"username"`
 }
 
 func getAlbumSongs(ids ...int64) ([]*SongResponse, error) {

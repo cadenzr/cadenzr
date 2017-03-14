@@ -36,3 +36,9 @@ CREATE TABLE IF NOT EXISTS "songs" (
   FOREIGN KEY(`album_id`) REFERENCES `albums`(`id`),
   FOREIGN KEY(`cover_id`) REFERENCES `images`(`id`)
 );
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+  `username`	TEXT NOT NULL UNIQUE,
+  `password`	TEXT NOT NULL
+);

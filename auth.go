@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"time"
 
@@ -11,8 +13,7 @@ import (
 
 // jwtCustomClaims are custom claims extending default ones.
 type jwtCustomClaims struct {
-	Name  string `json:"name"`
-	Admin bool   `json:"admin"`
+	Username string `json:"username"`
 	jwt.StandardClaims
 }
 
@@ -20,12 +21,19 @@ func login(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	if username == "jon" && password == "shhh!" {
+	shaSum := sha256.Sum256([]byte(password))
+	hash := hex.EncodeToString(shaSum[:])
+	user := &User{}
+	ok, err := find("users", user, map[string]interface{}{"username": username, "password": hash})
+	if err != nil {
+		log.WithFields(log.Fields{"username": username}).Error("Failed to search user in database.")
+		return err
+	}
 
+	if ok {
 		// Set custom claims
 		claims := &jwtCustomClaims{
-			"Jon Snow",
-			true,
+			user.Username,
 			jwt.StandardClaims{
 				ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
 			},
@@ -39,15 +47,15 @@ func login(c echo.Context) error {
 		if err != nil {
 			return err
 		}
+
+		log.WithFields(log.Fields{"username": username}).Info("Returning token for user.")
 		return c.JSON(http.StatusOK, echo.Map{
 			"token": t,
 		})
 	}
 
-	log.WithFields(
-		log.Fields{
-			"username": username,
-		}).Println("Login failed")
-
-	return echo.ErrUnauthorized
+	log.WithFields(log.Fields{"username": username}).Info("Wrong credentials.")
+	return c.JSON(http.StatusUnauthorized, echo.Map{
+		"message": "Wrong credentials.",
+	})
 }

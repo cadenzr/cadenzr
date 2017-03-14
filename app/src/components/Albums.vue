@@ -25,6 +25,7 @@
     var $ = require('jquery');
     let _ = require('lodash');
     let Album = require('./../Album').default;
+    let Api = require('./../Api').default;
 
     module.exports = {
             data: function () {
@@ -54,16 +55,14 @@
                 },
                 loadAlbums: function(){
                     let self = this
-                    this.$http.get( "/api/albums").then(response => {
-                        let data = response.body
-                        self.albums = _.map(data, (album) => {
+                    Api.getAlbums()
+                    .then(albums => {
+                        self.albums = _.map(albums, (album) => {
                             album.link = 'albums/' + album.id;
                             return new Album(album);
                         });
 
                         self.show = true;
-                    }, response => {
-                        // error callback
                     });
                 }
             }
