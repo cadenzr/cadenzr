@@ -68,7 +68,7 @@ var app = new Vue({
     mounted: function() {
         let self = this;
         (<any>this).subscriptions.push(PubSub.subscribe(ApiEvents.LoggedOut, () => {
-            (<any>self).$router.go('/login');
+            (<any>self).$router.push('/login');
         }));
     },
     beforeDestroy: () => {

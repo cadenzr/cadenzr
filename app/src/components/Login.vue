@@ -44,8 +44,8 @@ export default {
 
       Api.authenticate(self.username, self.password)
       .then(() => {
-        self.$router.go('/albums');
-        //self.$forceUpdate();
+        self.$router.push('/albums');
+        self.$forceUpdate();
       })
       .catch((reason) => {
         self.error = reason.message;
