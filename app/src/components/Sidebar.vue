@@ -14,7 +14,7 @@
                 </router-link>
             </li>
             <li>
-                <router-link :to="{ path: '/' }">
+                <router-link :to="{ path: '/artists' }">
                     <span class="fa fa-fw fa-microphone"></span> Artists
                 </router-link>
             </li>

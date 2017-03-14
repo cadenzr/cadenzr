@@ -60,6 +60,13 @@
                     }
 
                 }
+                
+                &.router-link-active {
+                    span {
+                        color: $orange;
+                    }
+                
+                }
             }
             
             
