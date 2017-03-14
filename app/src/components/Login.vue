@@ -43,7 +43,7 @@ export default {
       let self = this;
 
       Api.authenticate(self.username, self.password)
-      .then((me) => {
+      .then(() => {
         self.$router.go('/albums');
         //self.$forceUpdate();
       })
