@@ -43,12 +43,22 @@
             
             border-bottom: solid 1px darken($black, 5);
             padding: 1em 0.5em;
+            font-weight: 400;
             
             a {
-                color: darken($text-color, 0);
+                color: $text-color;
                 
                 span {
                     color: darken($text-color, 25);
+                }
+                
+                &:hover {
+                    color: #fff;
+                    
+                    span {
+                        color: $text-color;
+                    }
+
                 }
             }
             
