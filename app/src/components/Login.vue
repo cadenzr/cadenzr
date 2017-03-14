@@ -37,34 +37,13 @@ export default {
     }
   },
   mounted: function() {
-    let self = this;
-    let username = localStorage.getItem('login.username');
-    let password = localStorage.getItem('login.password');
-    if(username && password) {
-      Api.authenticate(username, password)
-      .then(() => {
-        self.$router.go('/albums');
-      })
-      .catch((reason) => {
-        self.error = 'Automatic login failed. Reason: ' + reason.message;
-        localStorage.removeItem('login.username');
-        localStorage.removeItem('login.password');
-        self.$forceUpdate();
-      });
-    }
   },
   methods: {
     submit: function() {
       let self = this;
 
       Api.authenticate(self.username, self.password)
-      .then(() => {
-        return Api.getMe();
-      })
       .then((me) => {
-        localStorage.setItem('login.username', self.username);
-        localStorage.setItem('login.password', self.password);
-
         self.$router.go('/albums');
         //self.$forceUpdate();
       })
