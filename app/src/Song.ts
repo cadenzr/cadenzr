@@ -1,8 +1,7 @@
 import * as _ from 'lodash';
 
-import {Provider} from './AudioPlayer';
 
-class Song implements Provider {
+class Song {
     id: number;
     album: string;
     artist: string;
@@ -18,18 +17,6 @@ class Song implements Provider {
         if(data) {
             _.assign(this, data);
         }
-    }
-
-    nextSong() : Song {
-        return this;
-    }
-
-    prevSong() : Song {
-        return this;
-    }
-
-    currentSong() : Song {
-        return this;
     }
 }
 

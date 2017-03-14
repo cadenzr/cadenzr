@@ -25,7 +25,7 @@ import {events as ApiEvents} from './Api';
 import Notifier from './Notifier';
 import PubSub from './PubSub';
 
-PubSub.subscribe(AudioPlayerEvents.SongChanged, (song: Song) => {
+PubSub.subscribe(AudioPlayerEvents.SongStarted, (song: Song) => {
     Notifier.notify('Playing song: ' + song.name);
 });
 

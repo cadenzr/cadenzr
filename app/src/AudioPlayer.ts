@@ -6,6 +6,8 @@ import PubSub from './PubSub';
 
 let events = {
     SongChanged: 'AudioPlayer:song-changed',
+    // Send once when song starts playing. But not when playing after pause etc...
+    SongStarted: 'AudioPlayer:song-started',
     VolumeChanged: 'AudioPlayer:volume-changed',
     TimeChanged: 'AudioPlayer:time-changed',
     Play: 'AudioPlayer:Play',
@@ -13,33 +15,14 @@ let events = {
     QueueChanged: 'AudioPlayer:QueueChanged'
 };
 
-interface Provider {
-    nextSong() : Song;
-    prevSong() : Song;
-    currentSong() : Song;
-}
-
-class NullProvider implements Provider {
-    nextSong() : Song {
-        return null;
-    }
-
-    prevSong() : Song {
-        return null;
-    }
-
-    currentSong() : Song {
-        return null;
-    }
-}
 
 class AudioPlayer {
     constructor() {
         let self = this;
 
-        this.provider = new NullProvider();
         this.currentQueue = [];
         this.currentIndex = null;
+        this.playingSong = null;        
 
         this.audioEl = document.createElement('audio');
         this.audioEl.style.display = 'none';
@@ -59,6 +42,15 @@ class AudioPlayer {
         this.setVolume(30);
 
         document.body.appendChild(this.audioEl);
+
+        let cachedQueue = JSON.parse(localStorage.getItem('AudioPlayer.currentQueue'));
+        if(cachedQueue !== null) {
+            cachedQueue = _.map(cachedQueue, (song: Song) => {
+                return new Song(song);
+            });
+            this.setQueue(cachedQueue);
+            this.reload();
+        }
     }
 
     /**
@@ -94,15 +86,21 @@ class AudioPlayer {
     }
 
     play() {
+        let self = this;
         this.audioEl.play();
         this.audioEl.onplaying = () => {
-            PubSub.publish(events.Play, this.provider.currentSong());
+            if(self.playingSong === null || self.playingSong.id !== this.currentSong().id) {
+                PubSub.publish(events.SongStarted, this.currentSong());
+            }
+            self.playingSong = self.currentSong();
+            PubSub.publish(events.Play, this.currentSong());
+
         };
     }
 
     pause() {
         this.audioEl.pause();
-        PubSub.publish(events.Pause, this.provider.currentSong());
+        PubSub.publish(events.Pause, this.currentSong());
     }
 
     next() : Promise<void> {
@@ -144,6 +142,8 @@ class AudioPlayer {
         } else {
             this.currentIndex = 0;
         }
+
+        localStorage.setItem('AudioPlayer.currentQueue', JSON.stringify(this.currentQueue));
 
         PubSub.publish(events.QueueChanged, this.currentQueue);
     }
@@ -234,11 +234,10 @@ class AudioPlayer {
     }
 
     private audioEl: HTMLMediaElement
-    private provider: Provider;
     private currentQueue: Array<Song>;
     private currentIndex: number;
+    private playingSong: Song;
 }
 
 export {events};
-export {Provider};
 export default new AudioPlayer();
