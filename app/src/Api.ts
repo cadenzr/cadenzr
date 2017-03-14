@@ -31,7 +31,7 @@ class Api {
                 if(response.responseJSON) {
                     reject(response.responseJSON);
                 } else {
-                    reject({'error': 'Something is wrong on the server.'});
+                    reject({'message': 'Something is wrong on the server.'});
                 }
             });
         });
@@ -57,7 +57,7 @@ class Api {
                 if(response.responseJSON) {
                     reject(response.responseJSON);
                 } else {
-                    reject({'error': 'Something is wrong on the server.'});
+                    reject({'message': 'Something is wrong on the server.'});
                 }
             });
         });
@@ -83,7 +83,7 @@ class Api {
                 if(response.responseJSON) {
                     reject(response.responseJSON);
                 } else {
-                    reject({'error': 'Something is wrong on the server.'});
+                    reject({'message': 'Something is wrong on the server.'});
                 }
             });
         });
