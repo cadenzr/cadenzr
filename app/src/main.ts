@@ -15,6 +15,7 @@ import * as AlbumsComponent from './components/Albums.vue';
 import * as AlbumComponent from './components/Album.vue';
 import * as CurrentQueueComponent from './components/CurrentQueue.vue';
 import * as LoginComponent from './components/Login.vue';
+import * as SidebarComponent from './components/Sidebar.vue';
 
 
 import './AudioPlayer';
@@ -78,6 +79,7 @@ var app = new Vue({
         'albums': AlbumsComponent,
         'album': AlbumComponent,
         'current-queue': CurrentQueueComponent,
+        'Sidebar': SidebarComponent,
     },
     data: function() {
         return { user: {} };

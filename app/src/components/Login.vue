@@ -1,4 +1,3 @@
-<!-- src/components/Login.vue -->
 <template>
   <div class="login">
     <div class="error">

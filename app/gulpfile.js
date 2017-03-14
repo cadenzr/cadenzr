@@ -44,8 +44,14 @@ gulp.task('copy-vue-components', function() {
 
 gulp.task('copy-vendor', function() {
 	return gulp
-		.src('assets/vendor/*/**')
+		.src('assets/vendor/**/*')
 		.pipe(gulp.dest('dist/assets/vendor'));
+});
+
+gulp.task('copy-images', function() {
+    return gulp
+        .src('assets/images/**/*')
+        .pipe(gulp.dest('dist/assets/images'));
 });
 
 gulp.task('typescript', ['copy-vue-components'], function() {
@@ -106,4 +112,4 @@ gulp.task('watch', ['watch-index', 'watch-ts', 'watch-vue', 'watch-sass'], funct
 	livereload.listen();
 });
 
-gulp.task("default", ['index', 'copy-vendor', 'sass', 'browserify']);
+gulp.task("default", ['index', 'copy-vendor', 'copy-images', 'sass', 'browserify']);

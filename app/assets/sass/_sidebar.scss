@@ -1,0 +1,73 @@
+/**
+ * Cadenzr sidebar component
+ * 
+ * Author: Mathias Beke
+ * Date: March 2017
+ */
+
+.sidebar {
+    
+    font-family: 'Open Sans' sans-serif;
+    background-color: darken($black, 3);
+    color: $text-color;
+    width: 16.66666%;
+    height: 100%;
+    position: fixed;
+    
+    .logo {
+        background-image: url('../images/logo.svg');
+        background-size: contain;
+        width: 30%;
+        padding-top: 30%;
+        margin: 1em auto;
+        
+        opacity: 0.85;
+        transition: 0.1s opacity ease;
+        
+        &:hover {
+            transition: 0.3s opacity ease;
+            opacity: 0.95;
+        }
+    }
+    
+    ul {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        font-size: 0.85em;
+        
+        li {
+            padding: 0;
+            margin: 0;
+            
+            
+            border-bottom: solid 1px darken($black, 5);
+            padding: 1em 0.5em;
+            
+            a {
+                color: darken($text-color, 0);
+                
+                span {
+                    color: darken($text-color, 25);
+                }
+            }
+            
+            
+            
+        }
+        
+    }
+    
+    .settings {
+        
+        position: absolute;
+        bottom: 80px;
+        //margin-bottom: 1em;
+        border-top: solid 1px darken($black, 5);
+        border-bottom: 0px;
+        width: 100%;
+
+        
+    }
+    
+}

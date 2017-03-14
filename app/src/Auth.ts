@@ -1,6 +1,14 @@
 import {router} from './main'
 import * as Vue from 'vue';
 import * as jwt_decode from 'jwt-decode';
+import PubSub from './PubSub';
+
+let events = {
+    LoggedIn:  'Auth:Login',
+    LoggedOut: 'Auth:Logout',
+};
+
+export {events};
 
 export default {
 
@@ -8,6 +16,7 @@ export default {
     authenticated: false,
     ready:         false,
     user:          false,
+    username:      '',
 
     // Send a request to the login URL and save the returned JWT
     login(context: any, creds: any, redirect: string) {
@@ -26,6 +35,12 @@ export default {
                 if (redirect) {
                     router.push(redirect)
                 }
+                
+                let decoded = jwt_decode(this.user.token);
+                this.name = decoded.name;
+                
+                PubSub.publish(events.LoggedIn);
+                
                 
 
         
@@ -48,6 +63,10 @@ export default {
                 // Valid token
                 (<any>Vue).http.headers.common['Authorization'] = 'Bearer ' + this.user.token;
                 this.authenticated = true;
+                
+                let decoded = jwt_decode(this.user.token);
+                this.name = decoded.name;
+                
             }
             else {
                 // Expired token
@@ -71,6 +90,7 @@ export default {
     logout() {
         localStorage.removeItem('user');
         this.authenticated = false;
+        PubSub.publish(events.LoggedOut);
         router.push('/login')
     }
 }

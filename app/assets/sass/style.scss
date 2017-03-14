@@ -15,11 +15,13 @@ $gray: rgba(205, 205, 205, 1);
 $color4: rgba(223, 248, 235, 1);
 $color5: rgba(1, 22, 56, 1);
 
+$text-color: lighten($gray, 10);
+
 body {
     font-family: 'Open Sans', sans-serif;
     font-weight: 300;
     font-size: 18px;
-    color: lighten($gray, 10);
+    color: $text-color;
     padding: 0;
     margin: 0;
     
@@ -32,6 +34,7 @@ body {
 @import "albums";
 @import "album";
 @import "login";
+@import "sidebar";
 
 li {
     margin-top: 0.5em;
@@ -39,6 +42,7 @@ li {
 
 a {
     text-decoration: none;
+    cursor: pointer;
 }
 
 .playing {

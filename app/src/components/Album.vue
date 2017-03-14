@@ -11,27 +11,30 @@
         </div>
     </div>
     
-    <table v-if="show" class="playlist">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th><a v-on:click="toggleSort('name')">Title</a></th>
-                <th><a v-on:click="toggleSort('artist')">Artist</a></th>
-                <th><a v-on:click="toggleSort('album')">Album</a></th>
-                <th><a v-on:click="toggleSort('year')">Year</a></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="(song, $index) in sortedSongs" v-on:click="play(song)" v-bind:class="{ playing: AudioPlayer.isCurrentSong(song) }">
-                <td>{{$index+1}}</td>
-                <td>{{song.name}}</td>
-                <td>{{song.artist}}</td>
-                <td>{{song.album}}</td>
-                <td>{{song.year}}</td>
-            </tr>
-        </tbody>
-    </table>
-    
+    <div class="album-songs">
+        <table v-if="show" class="playlist">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th><a v-on:click="toggleSort('name')">Title</a></th>
+                    <th><a v-on:click="toggleSort('artist')">Artist</a></th>
+                    <th><a v-on:click="toggleSort('album')">Album</a></th>
+                    <th><a v-on:click="toggleSort('year')">Year</a></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(song, $index) in sortedSongs" v-on:click="play(song)" v-bind:class="{ playing: AudioPlayer.isCurrentSong(song) }">
+                    <td>{{$index+1}}</td>
+                    <td>{{song.name}}</td>
+                    <td>{{song.artist}}</td>
+                    <td>{{song.album}}</td>
+                    <td>{{song.year}}</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+        
 </div>
 </template>
 
