@@ -1,5 +1,5 @@
 <template>
-<div>    
+<div class="current-queue">    
     <table v-if="show" class="playlist">
         <thead>
             <tr>
