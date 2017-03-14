@@ -19,7 +19,7 @@
                 </router-link>
             </li>
             <li>
-                <router-link :to="{ path: '/' }">
+                <router-link :to="{ path: '/current-queue' }">
                     <span class="fa fa-fw fa-play-circle-o"></span> Playing Now
                 </router-link>
             </li>
