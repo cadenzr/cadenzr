@@ -15,7 +15,7 @@ var util = require('gulp-util');
 var workingDir = '.working';
 
 gulp.task('index', function () {
-	var bundle = '/app/assets/scripts/bundle.';
+	var bundle = '/assets/scripts/bundle.';
 	if(util.env.production) {
 		bundle += 'min.';
 	}

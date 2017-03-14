@@ -652,18 +652,14 @@ func main() {
 	e := echo.New()
 	e.Use(corsHeader)
 
-	e.Static("/app", "app/dist")
+	e.Static("/", "app/dist")
 	e.Static("/images", "images")
-
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
 
 	// Login route
 	e.POST("/login", login)
 
 	// Restricted group
-	r := e.Group("/")
+	r := e.Group("/api")
 
 	// Configure middleware with the custom claims type
 	jwtConf := middleware.JWTConfig{
@@ -672,7 +668,7 @@ func main() {
 	}
 	r.Use(middleware.JWTWithConfig(jwtConf))
 
-	r.GET("albums", func(c echo.Context) error {
+	r.GET("/albums", func(c echo.Context) error {
 		query := `
 			SELECT
 				"albums"."id" as id,
@@ -716,7 +712,7 @@ func main() {
 		return c.JSON(http.StatusOK, results)
 	})
 
-	r.GET("albums/:id", func(c echo.Context) error {
+	r.GET("/albums/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		query := `
 			SELECT
@@ -745,7 +741,7 @@ func main() {
 		return c.JSON(http.StatusOK, album)
 	})
 
-	e.GET("songs/:id/stream", func(c echo.Context) error {
+	e.GET("api/songs/:id/stream", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		song := &Song{}
 		ok, err := find("songs", song, map[string]interface{}{"id": id})

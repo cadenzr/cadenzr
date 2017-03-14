@@ -54,7 +54,7 @@
                 },
                 loadAlbums: function(){
                     let self = this
-                    this.$http.get( "/albums").then(response => {
+                    this.$http.get( "/api/albums").then(response => {
                         let data = response.body
                         self.albums = _.map(data, (album) => {
                             album.link = 'albums/' + album.id;

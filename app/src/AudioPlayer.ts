@@ -227,7 +227,7 @@ class AudioPlayer {
             };
         });
 
-        self.audioEl.src = 'songs/' + s.id + '/stream';
+        self.audioEl.src = 'api/songs/' + s.id + '/stream';
         self.audioEl.load(); // Required so events are being generated.
 
         return p;
