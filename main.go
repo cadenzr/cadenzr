@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"os/signal"
 	"reflect"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/cadenzr/cadenzr/transcoders"
@@ -416,15 +419,12 @@ func createSchema() {
 	log.WithFields(log.Fields{"database": config.Database}).Info("Database initialized.")
 }
 
-func loadDatabase() {
-	if strings.HasSuffix(config.Database, ".sqlite") {
-		//os.Remove(config.Database)
-	}
-
+func loadDatabase() error {
 	var err error
 	db, err = sqlx.Open("sqlite3", config.Database)
 	if err != nil {
 		log.Fatalln("Could not open database: " + err.Error())
+		return err
 	}
 
 	createSchema()
@@ -441,14 +441,16 @@ func loadDatabase() {
 		user.Password = hash
 		if err := update("users", user, map[string]interface{}{"username": user.Username}); err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to update user password.")
+			return err
 		}
 	} else {
 		user.Password = hash
 		if err := insert("users", user); err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to create admin user.")
+			return err
 		}
 	}
-
+	return nil
 }
 
 type SongResponse struct {
@@ -547,6 +549,15 @@ func getAlbumSongs(ids ...int64) ([]*SongResponse, error) {
 	return songs, nil
 }
 
+func handleInterrupt(stopProgram chan struct{}) {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		stopProgram <- struct{}{}
+	}()
+}
+
 func main() {
 	loadConfig()
 	logLevel := log.InfoLevel
@@ -565,7 +576,12 @@ func main() {
 	log.SetLevel(logLevel)
 
 	probers.Initialize()
-	loadDatabase()
+	if err := loadDatabase(); err != nil {
+		return
+	}
+
+	stopProgram := make(chan struct{})
+	handleInterrupt(stopProgram)
 
 	scanCh := make(chan (chan struct{}))
 	go scanHandler(scanCh)
@@ -741,5 +757,11 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	e.Logger.Fatal(e.Start(config.Hostname + ":" + strconv.Itoa(int(config.Port))))
+	go func() {
+		e.Logger.Fatal(e.Start(config.Hostname + ":" + strconv.Itoa(int(config.Port))))
+	}()
+
+	<-stopProgram
+	log.Info("Stopping cadenzr...")
+	db.Close()
 }
