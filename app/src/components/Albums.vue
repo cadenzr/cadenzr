@@ -5,7 +5,11 @@
                 <router-link :to="{ path: album.link }">
                     <div class="album">
                         <div class="album-cover" :style="{ 'background-image': 'url(' + album.getCover() + ')' }">
-                            
+                            <div class="album-play">
+                                <div class="album-play-button">
+                                    <span class="fa fa-fw fa-play" @click.prevent="playAlbum(album)"></span>
+                                </div>
+                            </div>
                         </div>
                         <div class="album-meta">
                             <div class="album-meta-info pure-u-20-24">
@@ -26,6 +30,7 @@
     let _ = require('lodash');
     let Album = require('./../Album').default;
     let Api = require('./../Api').default;
+    let AudioPlayer = require('./../AudioPlayer').default;
 
     module.exports = {
             data: function () {
@@ -34,6 +39,7 @@
                     show: false,
                     sortKey: 'name',
                     sortOrder: 'asc',
+                    AudioPlayer: AudioPlayer,
                 }
             },
             mounted () {
@@ -72,7 +78,14 @@
 
                         self.show = true;
                     });
-                }
+                },
+                playAlbum: function(album) {
+                    AudioPlayer.setQueue(album.getSongs());
+                    AudioPlayer.reload()
+                    .then(() => {
+                        AudioPlayer.play();
+                    });
+                },
             }
     };
 </script>

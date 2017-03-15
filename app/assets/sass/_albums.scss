@@ -34,6 +34,54 @@
                 background-size: cover;
                 opacity: 0.85;
                 transition: 0.1s opacity ease;
+                position: relative;
+                
+                .album-play {
+                    
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    
+                    .album-play-button {
+                        color: #fff;
+                        opacity: 0;
+                        font-size: 30px;
+                        border: 2px #fff solid;
+                        display: inline-block;
+                        padding: 0.5em;
+                        border-radius: 50%;
+                        background-color: rgba(0,0,0, 0.3);
+                        transition: opacity 0.2s ease;
+                    }
+                    
+                    &:hover {
+                        background-color: rgba(0,0,0, 0.3);
+                        transition: opacity 0.5s ease;
+                        
+                        .album-play-button {
+                            opacity: 1;
+                            transition: transform 0.1s ease;
+                            transition: opacity 0.5s ease;
+                            
+                            &:hover {
+                                transform: scale(1.2);
+                                transition: transform 0.3s ease;
+                            }
+                            
+                        }
+                        
+                    }
+                    
+                    
+                    
+                }
+                
             }
 
             &:hover .album-cover {
