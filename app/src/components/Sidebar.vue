@@ -38,6 +38,14 @@
                         <span class="fa fa-fw fa-sign-out"></span> Logout
                     </a>
                 </li>
+                <li>
+                    <a v-if="!scanning" @click="scan">
+                        <span class="fa fa-fw fa-refresh"></span> Scan
+                    </a>
+                    <span v-if="scanning">
+                        <span class="fa fa-fw fa-spinner fa-spin"></span> Scanning...
+                    </span>
+                </li>
             </ul>
         </nav>
     </div>
@@ -63,6 +71,7 @@ export default {
       login: Api.isAuthenticated(),
       me: {},
       subscriptions: [],
+      scanning: false,
     }
   },
   methods: {
@@ -88,7 +97,18 @@ export default {
       logout: function() {
           //this.$parent.auth.logout();
           Api.logout();
-      }
+      },
+      scan: function() {
+          let self = this;
+          self.scanning = true;
+          Api.scan()
+          .then(() => {
+              self.scanning = false;
+          })
+          .catch(() => {
+              self.scanning = false;
+          });
+      },
   },
   mounted: function () {
         let self = this;

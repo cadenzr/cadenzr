@@ -121,6 +121,32 @@ class Api {
         return p;
     }
 
+    scan() : Promise<any> {
+        let p = new Promise<any>((resolve, reject) => {
+            $.ajax({
+                method: "post",
+                url: this.endpoint + 'scan',
+                beforeSend: (xhr) => {
+                    this.setToken(xhr);
+                },
+            })
+            .then((response) => {
+                resolve(response);
+            })
+            .fail((response) => {
+                console.log('Api::scan failed.');
+                this.checkUnauthorized(response);
+                if(response.responseJSON) {
+                    reject(response.responseJSON);
+                } else {
+                    reject({'message': 'Something is wrong on the server.'});
+                }
+            });
+        });
+
+        return p;
+    }
+
     getMe() : Promise<any> {
         let p = new Promise<any>((resolve, reject) => {
             let decoded = jwt_decode(this.retrieveToken());
