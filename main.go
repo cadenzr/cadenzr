@@ -106,6 +106,7 @@ type Song struct {
 	CoverId  *NullInt64 `db:"cover_id"`
 	Cover    *Image     `json:"cover"`
 	Hash     string     `db:"hash"`
+	Played   int64      `db:"played"`
 }
 
 func NewSong() *Song {
@@ -380,6 +381,28 @@ func (b *Backend) scanFilesystem() {
 
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
+		// Check if hash of song already in database. If so -> just skip so we don't have to do all the parsing etc again...
+		contents, err := ioutil.ReadFile(path)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to open song.")
+			return nil
+		}
+		md5sum := md5.Sum(contents)
+		query := `SELECT "id" FROM "songs" WHERE "hash" = ?`
+		var exists int64
+		err = db.QueryRow(query, hex.EncodeToString(md5sum[:])).Scan(&exists)
+		switch {
+		case err == sql.ErrNoRows:
+		case err != nil:
+			log.WithFields(log.Fields{"reason": err.Error(), "hash": hex.EncodeToString(md5sum[:])}).Error("Failed to check if hash exists in database.")
+			return nil
+		default:
+			log.WithFields(log.Fields{"path": path}).Info("Skipping file. Already in database.")
+			return nil
+		}
+
+		// We only get here if hash is not in database yet.
+
 		meta, err := probers.ProbeAudioFile(path)
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "file": path}).Error("Probing file failed.")
@@ -395,7 +418,7 @@ func (b *Backend) scanFilesystem() {
 				extensions, _ := mime.ExtensionsByType(mimeCover)
 				if extensions != nil && len(extensions) > 0 {
 					destination := "images/" + hash + extensions[0]
-					if err := ioutil.WriteFile(destination, meta.CoverBufer, 0666); err == nil {
+					if err = ioutil.WriteFile(destination, meta.CoverBufer, 0666); err == nil {
 						cover = &Image{
 							Path: destination,
 							Link: destination,
@@ -408,14 +431,6 @@ func (b *Backend) scanFilesystem() {
 				}
 			}
 		}
-
-		contents, err := ioutil.ReadFile(path)
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to open song.")
-			return nil
-		}
-
-		md5sum := md5.Sum(contents)
 
 		// TODO mime type is also calculated in ProbeAudioFile. Use that one?
 		s := NewSong()
@@ -551,12 +566,12 @@ func createSchema() {
 		log.Fatalln("Failed to create schema: " + err.Error())
 	}
 
-	log.WithFields(log.Fields{"database": config.Database}).Info("Created database.")
+	log.WithFields(log.Fields{"database": config.Database}).Info("Database initialized.")
 }
 
 func loadDatabase() {
 	if strings.HasSuffix(config.Database, ".sqlite") {
-		os.Remove(config.Database)
+		//os.Remove(config.Database)
 	}
 
 	var err error
@@ -600,14 +615,32 @@ type SongResponse struct {
 	Genre    NullString `db:"genre" json:"genre"`
 	Mime     string     `db:"mime" json:"mime"`
 	Cover    NullString `db:"cover" json:"cover"`
+	Played   int64      `db:"played" json:"played"`
 }
 
 type AlbumResponse struct {
-	Id    int64           `db:"id" json:"id"`
-	Name  string          `db:"name" json:"name"`
-	Year  NullInt64       `db:"year" jsosn:"year"`
-	Cover NullString      `db:"cover" json:"cover"`
-	Songs []*SongResponse `json:"songs"`
+	Id     int64           `db:"id" json:"id"`
+	Name   string          `db:"name" json:"name"`
+	Year   NullInt64       `db:"year" jsosn:"year"`
+	Cover  NullString      `db:"cover" json:"cover"`
+	Songs  []*SongResponse `json:"songs"`
+	Played int64           `json:"played"`
+}
+
+// CalculatePlayed Calculates the number of times this album was played.
+// Currently by selecting the min value from the played attribute of the songs.
+func (a *AlbumResponse) CalculatePlayed() {
+	if len(a.Songs) == 0 {
+		return
+	}
+
+	a.Played = a.Songs[0].Played
+
+	for _, s := range a.Songs {
+		if s.Played < a.Played {
+			a.Played = s.Played
+		}
+	}
 }
 
 type UserResponse struct {
@@ -625,6 +658,7 @@ func getAlbumSongs(ids ...int64) ([]*SongResponse, error) {
 					"songs"."year" as year,
 					"songs"."genre" as genre,
 					"songs"."mime" as mime,
+					"songs"."played" as played,
 
 					"artists"."name" as artist,
 					"artists"."id" as artist_id,
@@ -730,7 +764,7 @@ func main() {
 		ids := []int64{}
 		for rows.Next() {
 			album := &AlbumResponse{}
-			if err := rows.StructScan(album); err != nil {
+			if err = rows.StructScan(album); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 				return c.NoContent(http.StatusInternalServerError)
 			}
@@ -747,6 +781,7 @@ func main() {
 
 		for _, song := range songs {
 			albums[song.AlbumId.Int64].Songs = append(albums[song.AlbumId.Int64].Songs, song)
+			albums[song.AlbumId.Int64].CalculatePlayed()
 		}
 
 		return c.JSON(http.StatusOK, results)
@@ -777,6 +812,8 @@ func main() {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not get album songs.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
+
+		album.CalculatePlayed()
 
 		return c.JSON(http.StatusOK, album)
 	})
@@ -822,6 +859,28 @@ func main() {
 
 		http.ServeContent(c.Response(), c.Request(), song.Name, time.Time{}, streamer)
 		return nil
+	})
+
+	e.POST("api/songs/:id/played", func(c echo.Context) error {
+		id := parseUint32(c.Param("id"), 0)
+
+		query := `
+			UPDATE "songs"
+			SET "played" = "played" + 1
+			WHERE "id" = ?
+		`
+
+		r, err := db.Exec(query, id)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not update song played count.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		if affected, _ := r.RowsAffected(); affected == 0 {
+			return c.NoContent(http.StatusNotFound)
+		}
+
+		return c.NoContent(http.StatusOK)
 	})
 
 	e.Logger.Fatal(e.Start(config.Hostname + ":" + strconv.Itoa(int(config.Port))))

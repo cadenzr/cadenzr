@@ -8,6 +8,8 @@ let events = {
     SongChanged: 'AudioPlayer:song-changed',
     // Send once when song starts playing. But not when playing after pause etc...
     SongStarted: 'AudioPlayer:song-started',
+    // Send when reached the end.
+    SongEnded: 'AudioPlayer:song-ended',
     VolumeChanged: 'AudioPlayer:volume-changed',
     TimeChanged: 'AudioPlayer:time-changed',
     Play: 'AudioPlayer:Play',
@@ -36,6 +38,7 @@ class AudioPlayer {
         });
 
         this.audioEl.addEventListener('ended', () => {
+            PubSub.publish(events.SongEnded, this.currentSong());
             self.next();
         });
 

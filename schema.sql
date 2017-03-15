@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS "songs" (
   `path`	TEXT NOT NULL,
   `cover_id`	INTEGER,
   `hash` TEXT NOT NULL,
+  `played` INTEGER NOT NULL,
 
   FOREIGN KEY(`artist_id`) REFERENCES `artists`(`id`),
   FOREIGN KEY(`album_id`) REFERENCES `albums`(`id`),

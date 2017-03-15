@@ -2,6 +2,7 @@ import * as $ from "jquery";
 import {Promise} from 'es6-promise';
 import PubSub from './PubSub';
 import * as jwt_decode from 'jwt-decode';
+import Song from './Song';
 
 let events = {
     Authenticated: 'Api:Authenticated',
@@ -81,6 +82,33 @@ class Api {
             })
             .fail((response) => {
                 console.log('Api::getAlbum failed.');
+                this.checkUnauthorized(response);
+                if(response.responseJSON) {
+                    reject(response.responseJSON);
+                } else {
+                    reject({'message': 'Something is wrong on the server.'});
+                }
+            });
+        });
+
+        return p;
+    }
+
+    incrementPlayed(s: Song) : Promise<any> {
+        let p = new Promise<any>((resolve, reject) => {
+            $.ajax({
+                method: "post",
+                dataType: 'json',
+                url: this.endpoint + 'songs/' + s.id.toString() + '/played',
+                beforeSend: (xhr) => {
+                    this.setToken(xhr);
+                },
+            })
+            .then((response) => {
+                resolve(response);
+            })
+            .fail((response) => {
+                console.log('Api::incrementPlayed failed.');
                 this.checkUnauthorized(response);
                 if(response.responseJSON) {
                     reject(response.responseJSON);

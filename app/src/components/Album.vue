@@ -20,6 +20,7 @@
                     <th><a v-on:click="toggleSort('artist')">Artist</a></th>
                     <th><a v-on:click="toggleSort('album')">Album</a></th>
                     <th><a v-on:click="toggleSort('year')">Year</a></th>
+                    <th><a v-on:click="toggleSort('played')">Plays</a></th>
                 </tr>
             </thead>
             <tbody>
@@ -29,6 +30,7 @@
                     <td>{{song.artist}}</td>
                     <td>{{song.album}}</td>
                     <td>{{song.year}}</td>
+                    <td>{{song.played}}</td>
                 </tr>
             </tbody>
         </table>

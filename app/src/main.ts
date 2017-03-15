@@ -29,6 +29,10 @@ PubSub.subscribe(AudioPlayerEvents.SongStarted, (song: Song) => {
     Notifier.notify('Playing song: ' + song.name);
 });
 
+PubSub.subscribe(AudioPlayerEvents.SongEnded, (song: Song) => {
+    Api.incrementPlayed(song);
+});
+
 export var router = new Router({
     routes: [
           { path: '/', component: AlbumsComponent, meta: { requiresAuth: true } },
