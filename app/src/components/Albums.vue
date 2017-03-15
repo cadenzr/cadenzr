@@ -6,8 +6,8 @@
                     <div class="album">
                         <div class="album-cover" :style="{ 'background-image': 'url(' + album.getCover() + ')' }">
                             <div class="album-play">
-                                <div class="album-play-button">
-                                    <span class="fa fa-fw fa-play" @click.prevent="playAlbum(album)"></span>
+                                <div class="album-play-button" @click.prevent="playAlbum(album)">
+                                    <span class="fa fa-fw fa-play"></span>
                                 </div>
                             </div>
                         </div>
