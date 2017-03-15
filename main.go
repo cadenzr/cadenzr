@@ -442,7 +442,7 @@ func loadDatabase() error {
 		Username: config.Username,
 	}
 
-	if ok, _ := find("users", user, map[string]interface{}{"username": user.Username}); ok && user.Password == hash {
+	if ok, _ := find("users", user, map[string]interface{}{"username": user.Username}); ok && user.Password != hash {
 		// update password if already exists.
 		user.Password = hash
 		if err := update("users", user, map[string]interface{}{"username": user.Username}); err != nil {
