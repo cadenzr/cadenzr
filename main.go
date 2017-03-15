@@ -442,14 +442,15 @@ func loadDatabase() error {
 		Username: config.Username,
 	}
 
-	if ok, _ := find("users", user, map[string]interface{}{"username": user.Username}); ok && user.Password != hash {
+	ok, _ := find("users", user, map[string]interface{}{"username": user.Username})
+	if ok && user.Password != hash {
 		// update password if already exists.
 		user.Password = hash
 		if err := update("users", user, map[string]interface{}{"username": user.Username}); err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to update user password.")
 			return err
 		}
-	} else {
+	} else if !ok {
 		user.Password = hash
 		if err := insert("users", user); err != nil {
 			log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to create admin user.")
@@ -667,9 +668,12 @@ func main() {
 
 	scanCh := make(chan (chan struct{}))
 	go scanHandler(scanCh)
-	done := make(chan struct{})
-	scanCh <- done
-	<-done
+	go func() {
+		// We listen for ctrl-c interrupt at the end of main. So start this in a new goroutine so that it doesn't block ctrl-c.
+		done := make(chan struct{})
+		scanCh <- done
+		<-done
+	}()
 
 	e := echo.New()
 	e.Use(corsHeader)
