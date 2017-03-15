@@ -18,8 +18,8 @@
                     <span class="fa fa-fw fa-microphone"></span> Artists
                 </router-link>
             </li>
-            <li>
-                <router-link :to="{ path: '/current-queue' }">
+            <li v-on:drop="drop" v-on:dragover="dragover">
+                <router-link :to="{ path: '/current-queue' }"  >
                     <span class="fa fa-fw fa-play-circle-o"></span> Playing Now
                 </router-link>
             </li>
@@ -51,6 +51,9 @@
 let PubSub = require('./../PubSub').default;
 let Api = require('./../Api').default;
 let ApiEvents = require('./../Api').events;
+let Song = require('./../Song').default;
+let _ = require('lodash');
+let AudioPlayer = require('./../AudioPlayer').default;
 
 export default {
   data() {
@@ -63,6 +66,25 @@ export default {
     }
   },
   methods: {
+      drop: function(e) {
+          let songs = e.dataTransfer.getData('songs');
+          if(songs) {
+              songs = JSON.parse(songs);
+              songs = _.map(songs, (song) => {
+                  return new Song(song);
+              });
+
+            AudioPlayer.setQueue(songs);
+            AudioPlayer.reload()
+            .then(() => {
+                AudioPlayer.play();
+            });
+          }
+
+      },
+      dragover: function(e) {
+          e.preventDefault();
+      },
       logout: function() {
           //this.$parent.auth.logout();
           Api.logout();

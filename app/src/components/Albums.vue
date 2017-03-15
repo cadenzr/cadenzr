@@ -1,7 +1,7 @@
 <template>
     <div v-if="show" class="albumlist pure-g">
         <div v-for="(album, $index) in albums" class="pure-u-1-4">
-            <div class="album-container">
+            <div v-on:dragstart="dragstart" class="album-container" draggable="true" :data-album-index="$index">
                 <router-link :to="{ path: album.link }">
                     <div class="album">
                         <div class="album-cover" :style="{ 'background-image': 'url(' + album.getCover() + ')' }">
@@ -45,6 +45,14 @@
                 }
             },
             methods: {
+                dragstart: function(e) {
+                    let index = e.srcElement.getAttribute('data-album-index');
+                    let album = this.albums[index];
+                    let img = new Image();
+                    img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAw1BMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAcKsgAAAAQHRSTlMAAQIDBAUGCAsMDxARFBcbHCkqNTw9RktQVF9naG11gIKDiIyOkpedoKKlpqqttbq8wcXR19nc3uLo6/Hz9/v9cP1/IAAAANFJREFUOMvFktcSgjAQRUMwIlbA3nsXEXtn//+rnFCUkuCb3qfsnjPJThKEuBG1SpJPpdLcAthxaLZmghMShYLSOsE7YUHU+nfwJygo9FjgC+QJECvk4NeCNW3HCLeuimmDLRybBcFtMASzlvE1wsKyLAUbYSF4s/8WBBwnqL0rwHPW5ghkw38Lux7BF+HqExIuw3KasHbYOrRq0OIw9mYwPL6XaZ2K/nJtcAN4TIr2m6IFcyaM38uLTxARI50PX7E4EoYe1wliJ1PXz5d1I8+EL7ggW9U/YokyAAAAAElFTkSuQmCC';
+                    e.dataTransfer.setData('songs', JSON.stringify(album.getSongs()));
+                    e.dataTransfer.setDragImage(img, 0, 0);
+                },
                 toggleSort: function(key) {
                     this.sortKey = key;
                     if(this.sortOrder === 'asc') {
