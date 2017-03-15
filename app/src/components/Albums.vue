@@ -29,6 +29,7 @@
     var $ = require('jquery');
     let _ = require('lodash');
     let Album = require('./../Album').default;
+    let Song = require('./../Song').default;
     let Api = require('./../Api').default;
     let AudioPlayer = require('./../AudioPlayer').default;
 
@@ -73,6 +74,10 @@
                     .then(albums => {
                         self.albums = _.map(albums, (album) => {
                             album.link = 'albums/' + album.id;
+                            album.songs = _.map(album.songs, (song) => {
+                                return new Song(song);
+                            });
+
                             return new Album(album);
                         });
 
