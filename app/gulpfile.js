@@ -1,3 +1,4 @@
+var Promise = require('es6-promise').Promise;
 var gulp = require("gulp");
 var browserify = require("browserify");
 var source = require('vinyl-source-stream');
