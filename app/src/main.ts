@@ -14,6 +14,7 @@ import * as AlbumComponent from './components/Album.vue';
 import * as CurrentQueueComponent from './components/CurrentQueue.vue';
 import * as LoginComponent from './components/Login.vue';
 import * as SidebarComponent from './components/Sidebar.vue';
+import * as PlaylistComponent from './components/Playlist.vue';
 
 
 import './AudioPlayer';
@@ -39,7 +40,8 @@ export var router = new Router({
           { path: '/albums', component: AlbumsComponent, meta: { requiresAuth: true } },
           { path: '/albums/:id', component: AlbumComponent, meta: { requiresAuth: true } },
           { path: '/current-queue', component: CurrentQueueComponent, meta: { requiresAuth: true } },
-          { path: '/login', component: LoginComponent }
+          { path: '/login', component: LoginComponent },
+          { path: '/playlists/:id', component: PlaylistComponent, meta: { requiresAuth: true } },
 
     ],
 });
@@ -68,6 +70,7 @@ var app = new Vue({
         'album': AlbumComponent,
         'current-queue': CurrentQueueComponent,
         'Sidebar': SidebarComponent,
+        'playlist': PlaylistComponent,
     },
     mounted: function() {
         let self = this;

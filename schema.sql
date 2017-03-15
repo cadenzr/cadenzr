@@ -43,3 +43,19 @@ CREATE TABLE IF NOT EXISTS `users` (
   `username`	TEXT NOT NULL UNIQUE,
   `password`	TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS `playlists` (
+  `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+  `name`	TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS `playlist_songs` (
+  `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+  `playlist_id`	INTEGER NOT NULL,
+  `song_id`	INTEGER NOT NULL,
+
+  FOREIGN KEY(`playlist_id`) REFERENCES `playlists`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY(`song_id`) REFERENCES `songs`(`id`) ON DELETE CASCADE,
+
+  UNIQUE(`playlist_id`, `song_id`)
+);

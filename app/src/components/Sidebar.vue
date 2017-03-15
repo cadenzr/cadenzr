@@ -18,13 +18,29 @@
                     <span class="fa fa-fw fa-microphone"></span> Artists
                 </router-link>
             </li>
-            <li v-on:drop="drop" v-on:dragover="dragover">
+
+            <li v-on:drop="dropQueue" v-on:dragover="dragover">
                 <router-link :to="{ path: '/current-queue' }"  >
                     <span class="fa fa-fw fa-play-circle-o"></span> Playing Now
                 </router-link>
             </li>
         </ul>
     </nav>
+
+    <div class="playlists">
+        <h3>Playlists <a @click="showAddPlaylist = !showAddPlaylist;"><span class="fa fa-fw" v-bind:class="{'fa-plus': !showAddPlaylist, 'fa-times': showAddPlaylist}"></span></a></h3>
+        <input v-model="playlistName" v-on:keyup.enter="createPlaylist()" v-on:keyup.esc="showAddPlaylist = false;" style="color: black" v-if="showAddPlaylist" type="text">
+        <nav>
+            <ul>
+                <li v-on:dragover="dragover" v-on:drop="dropPlaylist(playlist, $event)" v-for="playlist in playlists">
+                    <router-link :to="{ path: '/playlists/' + playlist.id }">
+                        {{playlist.name}}
+                    </router-link>
+                    <span class="fa fa-fw fa-times" v-on:click="deletePlaylist(playlist)"></span>
+                </li>
+            </ul>
+        </nav>
+    </div>
     
     
     <div class="settings">
@@ -60,6 +76,7 @@ let PubSub = require('./../PubSub').default;
 let Api = require('./../Api').default;
 let ApiEvents = require('./../Api').events;
 let Song = require('./../Song').default;
+let Playlist = require('./../Playlist').default;
 let _ = require('lodash');
 let AudioPlayer = require('./../AudioPlayer').default;
 
@@ -72,10 +89,13 @@ export default {
       me: {},
       subscriptions: [],
       scanning: false,
+      playlists: [],
+      showAddPlaylist: false,
+      playlistName: '',
     }
   },
   methods: {
-      drop: function(e) {
+      dropQueue: function(e) {
           let songs = e.dataTransfer.getData('songs');
           if(songs) {
               songs = JSON.parse(songs);
@@ -88,6 +108,18 @@ export default {
             .then(() => {
                 AudioPlayer.play();
             });
+          }
+
+      },
+      dropPlaylist: function(playlist, e) {
+          let songs = e.dataTransfer.getData('songs');
+          if(songs) {
+              songs = JSON.parse(songs);
+              songs = _.map(songs, (song) => {
+                  return new Song(song);
+              });
+
+            Api.addSongsToPlaylist(songs, playlist);
           }
 
       },
@@ -109,6 +141,29 @@ export default {
               self.scanning = false;
           });
       },
+      createPlaylist: function() {
+          let self = this;
+          let playlist = new Playlist();
+          playlist.name = self.playlistName;
+          Api.createPlaylist(playlist)
+          .then((playlist) => {
+              self.playlists.push(playlist);
+          });
+
+          self.playlistName = '';
+          self.showAddPlaylist = false;
+      },
+
+      deletePlaylist: function(playlist) {
+          let self = this;
+
+          Api.deletePlaylist(playlist)
+          .then(() => {
+              _.remove(self.playlists, {id: playlist.id});
+              // Required because the array is mutated.
+              self.$forceUpdate();
+          });
+      },
   },
   mounted: function () {
         let self = this;
@@ -128,6 +183,11 @@ export default {
         Api.getMe()
         .then((me) => {
             self.me = me;
+        });
+
+        Api.getPlaylists()
+        .then((playlists) => {
+            self.playlists = playlists;
         });
   },
   beforeDestroy: function () {

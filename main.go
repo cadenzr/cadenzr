@@ -173,6 +173,12 @@ func (a *Album) SetCover(cover *Image) {
 	}
 }
 
+type Playlist struct {
+	Id    NullInt64 `db:"id"`
+	Name  string    `db:"name"`
+	Songs []*Song
+}
+
 type Artist struct {
 	Id   NullInt64 `db:"id"`
 	Name string    `db:"name"`
@@ -476,6 +482,12 @@ type AlbumResponse struct {
 	Played int64           `json:"played"`
 }
 
+type PlaylistResponse struct {
+	Id    int64           `db:"id" json:"id"`
+	Name  string          `db:"name" json:"name"`
+	Songs []*SongResponse `json:"songs"`
+}
+
 // CalculatePlayed Calculates the number of times this album was played.
 // Currently by selecting the min value from the played attribute of the songs.
 func (a *AlbumResponse) CalculatePlayed() {
@@ -499,6 +511,10 @@ type UserResponse struct {
 
 func getAlbumSongs(ids ...int64) ([]*SongResponse, error) {
 	songs := []*SongResponse{}
+
+	if len(ids) == 0 {
+		return songs, nil
+	}
 
 	query := `
 	SELECT
@@ -544,6 +560,72 @@ func getAlbumSongs(ids ...int64) ([]*SongResponse, error) {
 			continue
 		}
 		songs = append(songs, result)
+	}
+
+	return songs, nil
+}
+
+func getPlaylistSongs(ids ...int64) (map[int64][]*SongResponse, error) {
+	songs := map[int64][]*SongResponse{}
+
+	if len(ids) == 0 {
+		return songs, nil
+	}
+
+	for _, id := range ids {
+		songs[id] = []*SongResponse{}
+	}
+
+	query := `
+	SELECT
+					"songs"."id" as id,
+					"songs"."name" as name,
+					"songs"."year" as year,
+					"songs"."genre" as genre,
+					"songs"."mime" as mime,
+					"songs"."played" as played,
+
+					"artists"."name" as artist,
+					"artists"."id" as artist_id,
+
+					"albums"."name" as album,
+					"albums"."id" as album_id,
+
+					"images"."link" as cover,
+
+					"playlist_songs"."playlist_id" as playlist_id
+	FROM "songs"
+	LEFT OUTER JOIN "artists" ON "songs"."artist_id" = "artists"."id"
+	LEFT OUTER JOIN "albums" ON "songs"."album_id" = "albums"."id"
+	LEFT OUTER JOIN "images" ON "songs"."cover_id" = "images"."id"
+	LEFT OUTER JOIN "playlist_songs" ON "songs"."id" = "playlist_songs"."song_id"
+	WHERE "playlist_songs"."playlist_id" in (?)
+	`
+
+	query, args, err := sqlx.In(query, ids)
+	if err != nil {
+		log.WithFields(log.Fields{"reason": err.Error(), "ids": ids}).Error("Could not create IN query.")
+		return songs, err
+	}
+
+	query = db.Rebind(query)
+	rows, err := db.Queryx(query, args...)
+	if err != nil {
+		log.WithFields(log.Fields{"reason": err.Error(), "ids": ids}).Error("Could not create execute query.")
+		return songs, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		result := &struct {
+			SongResponse
+			PlaylistId int64 `db:"playlist_id"`
+		}{}
+		if err := rows.StructScan(result); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "ids": ids}).Error("getPlaylistSongs: Failed to scan.")
+			continue
+		}
+		songs[result.PlaylistId] = append(songs[result.PlaylistId], &result.SongResponse)
 	}
 
 	return songs, nil
@@ -637,7 +719,9 @@ func main() {
 		albums := map[int64]*AlbumResponse{}
 		ids := []int64{}
 		for rows.Next() {
-			album := &AlbumResponse{}
+			album := &AlbumResponse{
+				Songs: []*SongResponse{},
+			}
 			if err = rows.StructScan(album); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
 				return c.NoContent(http.StatusInternalServerError)
@@ -753,6 +837,226 @@ func main() {
 		if affected, _ := r.RowsAffected(); affected == 0 {
 			return c.NoContent(http.StatusNotFound)
 		}
+
+		return c.NoContent(http.StatusOK)
+	})
+
+	e.GET("api/playlists", func(c echo.Context) error {
+		query := `
+			SELECT
+				"playlists"."id" as id,
+				"playlists"."name" as name
+			FROM "playlists"
+		`
+		rows, err := db.Queryx(query)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not fetch playlists.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		defer rows.Close()
+
+		results := []*PlaylistResponse{}
+		playlists := map[int64]*PlaylistResponse{}
+		ids := []int64{}
+		for rows.Next() {
+			playlist := &PlaylistResponse{
+				Songs: []*SongResponse{},
+			}
+			if err = rows.StructScan(playlist); err != nil {
+				log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan playlist.")
+				return c.NoContent(http.StatusInternalServerError)
+			}
+
+			results = append(results, playlist)
+			playlists[playlist.Id] = playlist
+			ids = append(ids, playlist.Id)
+		}
+
+		playlistSongs, err := getPlaylistSongs(ids...)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		for id, songs := range playlistSongs {
+			playlists[id].Songs = songs
+		}
+
+		return c.JSON(http.StatusOK, results)
+	})
+
+	e.POST("api/playlists", func(c echo.Context) error {
+		name := strings.TrimSpace(c.FormValue("name"))
+		if len(name) == 0 {
+			return c.NoContent(http.StatusBadRequest)
+		}
+
+		playlist := &Playlist{
+			Name: name,
+		}
+
+		ok, err := find("playlists", playlist, map[string]interface{}{"name": playlist.Name})
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		if ok {
+			return c.JSON(http.StatusBadRequest, echo.Map{"message": "Playlist with this name already exists."})
+		}
+
+		if err := insert("playlists", playlist); err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		log.WithFields(log.Fields{"playlist": playlist.Id.Int64, "name": playlist.Name}).Info("Created playlist.")
+
+		return c.JSON(http.StatusOK, &PlaylistResponse{
+			Id:    playlist.Id.Int64,
+			Name:  playlist.Name,
+			Songs: []*SongResponse{},
+		})
+	})
+
+	e.GET("api/playlists/:id", func(c echo.Context) error {
+		id := parseUint32(c.Param("id"), 0)
+
+		playlist := &PlaylistResponse{
+			Id: int64(id),
+		}
+
+		ok, err := find("playlists", playlist, map[string]interface{}{"id": playlist.Id})
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		if !ok {
+			return c.NoContent(http.StatusNotFound)
+		}
+
+		playlistSongs, err := getPlaylistSongs(playlist.Id)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not get playlist songs.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		playlist.Songs = playlistSongs[playlist.Id]
+		return c.JSON(http.StatusOK, playlist)
+	})
+
+	e.DELETE("api/playlists/:id", func(c echo.Context) error {
+		id := parseUint32(c.Param("id"), 0)
+
+		query := `DELETE FROM "playlists" WHERE "id" = ?`
+		r, err := db.Exec(query, id)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not execute delete playlist query.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		if affected, _ := r.RowsAffected(); affected == 0 {
+			return c.NoContent(http.StatusNotFound)
+		}
+
+		log.WithFields(log.Fields{"playlist": id}).Info("Deleted playlist.")
+
+		return c.NoContent(http.StatusOK)
+	})
+
+	e.POST("api/playlists/:id", func(c echo.Context) error {
+		id := parseUint32(c.Param("id"), 0)
+		name := strings.TrimSpace(c.FormValue("name"))
+		if len(name) == 0 {
+			return c.NoContent(http.StatusBadRequest)
+		}
+
+		playlist := &Playlist{}
+		ok, err := find("playlists", playlist, map[string]interface{}{"id": id})
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		if !ok {
+			return c.NoContent(http.StatusNotFound)
+		}
+
+		if err := update("playlists", playlist, map[string]interface{}{"id": playlist.Id.Int64}); err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		log.WithFields(log.Fields{"playlist": playlist.Id.Int64, "name": playlist.Name}).Info("Updated playlist.")
+
+		return c.NoContent(http.StatusOK)
+	})
+
+	e.POST("api/playlists/:id/songs", func(c echo.Context) error {
+		id := parseUint32(c.Param("id"), 0)
+		sids := []int64{}
+
+		formValues, err := c.FormParams()
+		if err != nil {
+			log.WithFields(log.Fields{"playlist": id, "form": formValues, "reason": err.Error()}).Info("Could not get form params for adding songs to playlist.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		for key, values := range formValues {
+			if key == "songs[]" {
+				for _, value := range values {
+					sids = append(sids, int64(parseUint32(value, 0)))
+				}
+			}
+		}
+
+		query := `INSERT INTO "playlist_songs" ("playlist_id", "song_id") VALUES (?, ?)`
+		tx, err := db.Begin()
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Info("Could not start transaction to insert songs into playlist.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		for _, sid := range sids {
+			var r sql.Result
+			r, err = tx.Exec(query, id, sid)
+			if err != nil {
+				tx.Rollback()
+				return c.NoContent(http.StatusInternalServerError)
+			}
+
+			if affected, _ := r.RowsAffected(); affected == 0 {
+				tx.Rollback()
+				return c.NoContent(http.StatusNotFound)
+			}
+		}
+
+		if err = tx.Commit(); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Info("Failed to commit songs to playlist_songs.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		log.WithFields(log.Fields{"playlist": id, "songs": sids}).Info("Added song to playlist.")
+
+		return c.NoContent(http.StatusOK)
+	})
+
+	e.DELETE("api/playlists/:pid/songs/:sid", func(c echo.Context) error {
+		pid := parseUint32(c.Param("pid"), 0)
+		sid := parseUint32(c.Param("sid"), 0)
+
+		query := `DELETE FROM "playlist_songs" WHERE "playlist_id" = ? AND "song_id" = ?`
+		r, err := db.Exec(query, pid, sid)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "playlist": pid, "song": sid}).Info("Could not execute delete song from playlist query.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		affected, err := r.RowsAffected()
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "playlist": pid, "song": sid}).Info("Could not delete song from playlist.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		if affected == 0 {
+			return c.NoContent(http.StatusNotFound)
+		}
+
+		log.WithFields(log.Fields{"playlist": pid, "song": sid}).Info("Removed song from playlist.")
 
 		return c.NoContent(http.StatusOK)
 	})
