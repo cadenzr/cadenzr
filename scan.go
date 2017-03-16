@@ -128,6 +128,10 @@ func scanFilesystem() {
 		// TODO mime type is also calculated in ProbeAudioFile. Use that one?
 		s := NewSong()
 		s.Name = meta.Title
+		if len(s.Name) == 0 {
+			log.WithFields(log.Fields{"file": path}).Error("Could not get name of song.")
+			return nil
+		}
 		s.Mime = mimeType
 		s.Path = path
 		s.Hash = hex.EncodeToString(md5sum[:])
@@ -137,9 +141,13 @@ func scanFilesystem() {
 		}
 		if len(meta.Genre) > 0 {
 			s.Genre.Set(meta.Genre)
+		} else {
+			log.WithFields(log.Fields{"file": path}).Info("No genre found.")
 		}
 		if meta.Year != 0 {
 			s.Year.Set(int64(meta.Year))
+		} else {
+			log.WithFields(log.Fields{"file": path}).Info("No year found.")
 		}
 		if len(meta.Album) > 0 {
 			s.SetAlbum(&Album{
@@ -152,6 +160,8 @@ func scanFilesystem() {
 			if err := insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name}); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error(), "album": s.Album.Name}).Error("Failed to insert album.")
 			}
+		} else {
+			log.WithFields(log.Fields{"file": path}).Info("No album found.")
 		}
 		if len(meta.Artist) > 0 {
 			s.SetArtist(&Artist{
@@ -161,6 +171,14 @@ func scanFilesystem() {
 			if err := insertIfNotExists("artists", s.Artist, map[string]interface{}{"name": s.Artist.Name}); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error(), "artist": s.Artist.Name}).Error("Failed to insert artist.")
 			}
+		} else {
+			log.WithFields(log.Fields{"file": path}).Info("No Artist found.")
+		}
+
+		if meta.Duration != 0 {
+			s.Duration.Set(meta.Duration)
+		} else {
+			log.WithFields(log.Fields{"file": path}).Info("No duration found.")
 		}
 
 		if err := insertIfNotExists("songs", s, map[string]interface{}{"hash": s.Hash}); err != nil {

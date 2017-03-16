@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS "songs" (
   `album_id`	INTEGER,
   `year`	INTEGER,
   `genre`	TEXT,
+  `duration` REAL,
   `mime`	TEXT NOT NULL,
   `path`	TEXT NOT NULL,
   `cover_id`	INTEGER,

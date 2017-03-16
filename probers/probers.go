@@ -3,7 +3,6 @@ package probers
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"mime"
@@ -14,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/badgerodon/mp3"
 	log "github.com/cadenzr/cadenzr/log"
 	id3 "github.com/mikkyang/id3-go"
 	id3v2 "github.com/mikkyang/id3-go/v2"
@@ -28,8 +28,66 @@ type AudioMeta struct {
 	Year        int
 	AlbumArtist string
 	Genre       string
+	Duration    float64
 
 	CoverBufer []byte
+}
+
+func (a *AudioMeta) IsComplete() bool {
+	complete := true
+
+	complete = complete && len(a.Title) > 0
+	complete = complete && len(a.Artist) > 0
+	complete = complete && len(a.Album) > 0
+	complete = complete && a.Year > 0
+	complete = complete && len(a.Genre) > 0
+	complete = complete && a.Duration > 0
+	complete = complete && a.CoverBufer != nil
+
+	return complete
+}
+
+// Merge Set a's attributes to the attributes that b has more.
+func (a *AudioMeta) Merge(b *AudioMeta) {
+	if len(a.Title) == 0 {
+		a.Title = b.Title
+	}
+
+	if len(a.Artist) == 0 {
+		a.Artist = b.Artist
+	}
+
+	if len(a.Album) == 0 {
+		a.Album = b.Album
+	}
+
+	if a.Track != b.Track && a.Track == 0 {
+		a.Track = b.Track
+	}
+
+	if a.TotalTracks != b.TotalTracks && a.TotalTracks == 0 {
+		a.TotalTracks = b.TotalTracks
+	}
+
+	if a.Year != b.Year && a.Year == 0 {
+		a.Year = b.Year
+	}
+
+	if len(a.AlbumArtist) == 0 {
+		a.AlbumArtist = b.AlbumArtist
+	}
+
+	if len(a.Genre) == 0 {
+		a.Genre = b.Genre
+	}
+
+	if a.Duration != b.Duration && a.Duration == 0 {
+		a.Duration = b.Duration
+	}
+
+	if a.CoverBufer == nil {
+		a.CoverBufer = b.CoverBufer
+	}
 }
 
 func parseInt(s string) int {
@@ -87,7 +145,7 @@ func (p *ffprobeAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error
 
 	cmd := exec.Command(ffprobe,
 		"-print_format", "json",
-		"-show_entries", "format_tags",
+		"-show_entries", "format=duration:format_tags",
 		file,
 	)
 
@@ -102,10 +160,12 @@ func (p *ffprobeAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error
 
 	response := struct {
 		Format struct {
-			Tags struct {
+			Duration string `json:"duration"`
+			Tags     struct {
 				Title       string `json:"title"`
 				Artist      string `json:"artist"`
 				Album       string `json:"album"`
+				Genre       string `json:"genre"`
 				Track       string `json:"track"`
 				TotalTracks string `json:"totaltracks"`
 				Date        string `json:"date"`
@@ -126,11 +186,13 @@ func (p *ffprobeAudioProber) ProbeAudio(file string) (meta *AudioMeta, err error
 	meta.Album = response.Format.Tags.Album
 	meta.Title = response.Format.Tags.Title
 	meta.Artist = response.Format.Tags.Artist
+	meta.Genre = response.Format.Tags.Genre
 	meta.Album = response.Format.Tags.Album
 	meta.Track = parseInt(response.Format.Tags.Track)
 	meta.TotalTracks = parseInt(response.Format.Tags.TotalTracks)
 	meta.Year = parseInt(response.Format.Tags.Date)
 	meta.AlbumArtist = response.Format.Tags.AlbumArtist
+	meta.Duration, _ = strconv.ParseFloat(response.Format.Duration, 64)
 
 	p.getCover(file, meta)
 
@@ -171,6 +233,16 @@ func (p *id3AudioProber) ProbeAudio(file string) (meta *AudioMeta, err error) {
 	meta.Artist = p.cleanString(id3f.Artist())
 	meta.Album = p.cleanString(id3f.Album())
 
+	f, err := os.Open(file)
+	if err != nil {
+		return
+	}
+	d, err := mp3.Length(f)
+	if err == nil {
+		defer f.Close()
+		meta.Duration = d.Seconds()
+	}
+
 	if apic := id3f.Frame("APIC"); apic != nil {
 		meta.CoverBufer = apic.(*id3v2.ImageFrame).Data()
 	}
@@ -191,8 +263,6 @@ var probers = []*prober{}
 
 func Initialize() {
 	id3Prober := &id3AudioProber{}
-	ffProber := &ffprobeAudioProber{}
-
 	probers = append(probers, &prober{
 		Mime: regexp.MustCompile("audio/(mpeg|mp3)"),
 		Probers: []AudioProber{
@@ -200,6 +270,7 @@ func Initialize() {
 		},
 	})
 
+	ffProber := &ffprobeAudioProber{}
 	if ffProber.hasFFprobe() {
 		probers = append(probers, &prober{
 			Mime: regexp.MustCompile("audio/.*"),
@@ -238,27 +309,28 @@ func ProbeAudioFile(file string) (meta *AudioMeta, err error) {
 		mime = http.DetectContentType(b)
 	}
 
-	hasProber := false
+	meta = &AudioMeta{}
+	done := false
 	for _, prober := range probers {
 		if prober.Mime.MatchString(mime) {
 			for _, ap := range prober.Probers {
-				meta, err = ap.ProbeAudio(file)
-				// Just use first prober that works.
-				// TODO: Maybe we can use next prober if this one failed.
 				log.WithFields(log.Fields{"mime": mime, "file": file}).Debugf("Using prober '%s'.", ap)
-				hasProber = true
-				break
+				tmpMeta, err := ap.ProbeAudio(file)
+				if err != nil {
+					continue
+				}
+
+				meta.Merge(tmpMeta)
+				if meta.IsComplete() {
+					done = true
+					break
+				}
 			}
 
-			if hasProber {
+			if done {
 				break
 			}
 		}
-	}
-
-	if !hasProber {
-		log.WithFields(log.Fields{"file": file, "mime": mime}).Info("No prober found for file.")
-		return meta, errors.New("No prober found for mime `" + mime + "`.")
 	}
 
 	return

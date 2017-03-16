@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,6 +60,38 @@ func (v *NullInt64) Set(data int64) {
 	v.Valid = true
 }
 
+type NullFloat64 struct {
+	sql.NullFloat64
+}
+
+func (v NullFloat64) MarshalJSON() ([]byte, error) {
+	if v.Valid {
+		return json.Marshal(v.Float64)
+	} else {
+		return json.Marshal(nil)
+	}
+}
+
+func (v *NullFloat64) UnmarshalJSON(data []byte) error {
+	// Unmarshalling into a pointer will let us detect null
+	var x *float64
+	if err := json.Unmarshal(data, &x); err != nil {
+		return err
+	}
+	if x != nil {
+		v.Valid = true
+		v.Float64 = *x
+	} else {
+		v.Valid = false
+	}
+	return nil
+}
+
+func (v *NullFloat64) Set(data float64) {
+	v.Float64 = data
+	v.Valid = true
+}
+
 type NullString struct {
 	sql.NullString
 }
@@ -91,20 +125,21 @@ func (v *NullString) Set(data string) {
 }
 
 type Song struct {
-	Id       NullInt64  `json:"id" db:"id"`
-	Name     string     `json:"name" db:"name"`
-	ArtistId *NullInt64 `db:"artist_id"`
-	Artist   *Artist    `json:"artist"`
-	AlbumId  *NullInt64 `db:"album_id"`
-	Album    *Album     `json:"album"`
-	Year     NullInt64  `json:"year" db:"year"`
-	Genre    NullString `json:"genre" db:"genre"`
-	Mime     string     `json:"mime" db:"mime"`
-	Path     string     `json:"-" db:"path"`
-	CoverId  *NullInt64 `db:"cover_id"`
-	Cover    *Image     `json:"cover"`
-	Hash     string     `db:"hash"`
-	Played   int64      `db:"played"`
+	Id       NullInt64   `json:"id" db:"id"`
+	Name     string      `json:"name" db:"name"`
+	ArtistId *NullInt64  `db:"artist_id"`
+	Artist   *Artist     `json:"artist"`
+	AlbumId  *NullInt64  `db:"album_id"`
+	Album    *Album      `json:"album"`
+	Year     NullInt64   `json:"year" db:"year"`
+	Genre    NullString  `json:"genre" db:"genre"`
+	Duration NullFloat64 `db:"duration"`
+	Mime     string      `json:"mime" db:"mime"`
+	Path     string      `json:"-" db:"path"`
+	CoverId  *NullInt64  `db:"cover_id"`
+	Cover    *Image      `json:"cover"`
+	Hash     string      `db:"hash"`
+	Played   int64       `db:"played"`
 }
 
 func NewSong() *Song {
@@ -384,6 +419,12 @@ func loadConfig() {
 		json.Unmarshal(raw, &config)
 	}
 
+	config.Hostname = strings.TrimSpace(config.Hostname)
+
+	if len(config.Hostname) == 0 {
+		config.Hostname = "127.0.0.1"
+	}
+
 	if config.Port == 0 {
 		config.Port = 8080
 	}
@@ -461,17 +502,18 @@ func loadDatabase() error {
 }
 
 type SongResponse struct {
-	Id       int64      `db:"id" json:"id"`
-	Name     string     `db:"name" json:"name"`
-	Artist   NullString `db:"artist" json:"artist"`
-	ArtistId NullInt64  `db:"artist_id" json:"-"`
-	AlbumId  NullInt64  `db:"album_id" json:"-"`
-	Album    NullString `db:"album" json:"album"`
-	Year     NullInt64  `db:"year" json:"year"`
-	Genre    NullString `db:"genre" json:"genre"`
-	Mime     string     `db:"mime" json:"mime"`
-	Cover    NullString `db:"cover" json:"cover"`
-	Played   int64      `db:"played" json:"played"`
+	Id       int64       `db:"id" json:"id"`
+	Name     string      `db:"name" json:"name"`
+	Artist   NullString  `db:"artist" json:"artist"`
+	ArtistId NullInt64   `db:"artist_id" json:"-"`
+	AlbumId  NullInt64   `db:"album_id" json:"-"`
+	Album    NullString  `db:"album" json:"album"`
+	Year     NullInt64   `db:"year" json:"year"`
+	Genre    NullString  `db:"genre" json:"genre"`
+	Duration NullFloat64 `db:"duration" json:"duration"`
+	Mime     string      `db:"mime" json:"mime"`
+	Cover    NullString  `db:"cover" json:"cover"`
+	Played   int64       `db:"played" json:"played"`
 }
 
 type AlbumResponse struct {
@@ -525,6 +567,7 @@ func getAlbumSongs(ids ...int64) ([]*SongResponse, error) {
 					"songs"."genre" as genre,
 					"songs"."mime" as mime,
 					"songs"."played" as played,
+					"songs"."duration" as duration,
 
 					"artists"."name" as artist,
 					"artists"."id" as artist_id,
@@ -585,6 +628,7 @@ func getPlaylistSongs(ids ...int64) (map[int64][]*SongResponse, error) {
 					"songs"."genre" as genre,
 					"songs"."mime" as mime,
 					"songs"."played" as played,
+					"songs"."duration" as duration,
 
 					"artists"."name" as artist,
 					"artists"."id" as artist_id,
@@ -668,12 +712,12 @@ func main() {
 
 	scanCh := make(chan (chan struct{}))
 	go scanHandler(scanCh)
-	go func() {
+	/*go func() {
 		// We listen for ctrl-c interrupt at the end of main. So start this in a new goroutine so that it doesn't block ctrl-c.
 		done := make(chan struct{})
 		scanCh <- done
 		<-done
-	}()
+	}()*/
 
 	e := echo.New()
 	e.Use(corsHeader)
@@ -747,6 +791,49 @@ func main() {
 		}
 
 		return c.JSON(http.StatusOK, results)
+	})
+
+	e.GET("/albums/:id/album.m3u8", func(c echo.Context) error {
+		id := parseUint32(c.Param("id"), 0)
+		query := `
+			SELECT
+				"albums"."id" as id,
+				"albums"."name" as name,
+				"albums"."year" as year,
+				"images"."link" as cover
+			FROM "albums"
+			LEFT OUTER JOIN "images" ON "albums"."cover_id" = "images"."id"
+			WHERE "albums"."id" = ?
+		`
+
+		album := &AlbumResponse{}
+		err := db.QueryRowx(query, id).StructScan(album)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not scan album.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		album.Songs, err = getAlbumSongs(album.Id)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not get album songs.")
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		endpoint := "http://" + config.Hostname
+		if config.Port != 0 {
+			endpoint = endpoint + ":" + strconv.Itoa(int(config.Port))
+		}
+		endpoint = endpoint + "/api/songs/"
+
+		response := bytes.NewBuffer([]byte{})
+		response.WriteString("#EXTM3U\n")
+		for _, song := range album.Songs {
+			response.WriteString("#EXTINF:" + strconv.Itoa(int(math.Ceil(song.Duration.Float64))) + ", " + song.Artist.String + " - " + song.Name + "\n")
+			response.WriteString(endpoint + strconv.Itoa(int(song.Id)) + "/stream\n")
+		}
+
+		//response.WriteString("#EXTINF:419,Alice in Chains - Rotten Apple")
+		return c.Stream(http.StatusOK, "text/plain", response)
 	})
 
 	r.GET("/albums/:id", func(c echo.Context) error {
