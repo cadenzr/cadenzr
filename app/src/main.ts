@@ -83,6 +83,9 @@ var app = new Vue({
         (<any>this).subscriptions.push(PubSub.subscribe(ApiEvents.LoggedOut, () => {
             (<any>self).$router.push('/login');
         }));
+        if(!Api.isAuthenticated()) {
+            (<any>self).$router.push('/login');
+        }
     },
     beforeDestroy: () => {
         _.forEach(this.subscriptions, (s) => {
