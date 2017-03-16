@@ -359,7 +359,7 @@ class Api {
         localStorage.setItem('api.token', token);
     }
 
-    private retrieveToken() : string {
+    retrieveToken() : string {
         return localStorage.getItem('api.token');
     }
 

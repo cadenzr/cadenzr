@@ -1,0 +1,53 @@
+<template>
+  <div class="upload">
+    <div class="error">
+      <p v-if="error"><span class="fa fa-warning"></span> {{ error }}</p>
+      <span v-if="scanning">
+          <span class="fa fa-fw fa-spinner fa-spin"></span> Scanning...
+      </span>
+    </div>
+    
+    <dropzone id="myVueDropzone" url="/api/upload" maxFileSizeInMB="64" useFontAwesome="true" maxNumberOfFiles="64" showRemoveLink="false" v-on:vdropzone-success="scan" v-bind:headers="headers"></dropzone>
+
+  </div>
+</template>
+
+<script>
+    
+//import Auth from '../Auth'
+
+let Api = require('./../Api').default;
+//let router = require('./../main').router;
+
+export default {
+  data() {
+    return {
+      error: '',
+      scanning: false,
+    }
+  },
+  computed: {
+        headers() {
+              return {
+                  Authorization: 'Bearer '+ Api.retrieveToken()
+              } 
+        } 
+  },
+  mounted: function() {
+  },
+  methods: {
+    scan: function() {
+        let self = this;
+        self.scanning = true;
+        Api.scan()
+        .then(() => {
+            self.scanning = false;
+        })
+        .catch(() => {
+            self.scanning = false;
+        });
+    },
+  }
+
+}
+</script>
