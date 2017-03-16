@@ -793,7 +793,8 @@ func main() {
 		return c.JSON(http.StatusOK, results)
 	})
 
-	e.GET("/albums/:id/album.m3u8", func(c echo.Context) error {
+	// TODO SHOULD BE PROTECTED SOMEHOW.
+	e.GET("/api/albums/(:id)/playlist.m3u8", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		query := `
 			SELECT
@@ -867,7 +868,7 @@ func main() {
 		return c.JSON(http.StatusOK, album)
 	})
 
-	e.GET("api/songs/:id/stream", func(c echo.Context) error {
+	e.GET("/api/songs/:id/stream", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		song := &Song{}
 		ok, err := find("songs", song, map[string]interface{}{"id": id})
@@ -910,7 +911,7 @@ func main() {
 		return nil
 	})
 
-	e.POST("api/songs/:id/played", func(c echo.Context) error {
+	r.POST("/songs/:id/played", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 
 		query := `
@@ -932,7 +933,7 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	e.GET("api/playlists", func(c echo.Context) error {
+	r.GET("/playlists", func(c echo.Context) error {
 		query := `
 			SELECT
 				"playlists"."id" as id,
@@ -975,7 +976,7 @@ func main() {
 		return c.JSON(http.StatusOK, results)
 	})
 
-	e.POST("api/playlists", func(c echo.Context) error {
+	r.POST("/playlists", func(c echo.Context) error {
 		name := strings.TrimSpace(c.FormValue("name"))
 		if len(name) == 0 {
 			return c.NoContent(http.StatusBadRequest)
@@ -1007,7 +1008,7 @@ func main() {
 		})
 	})
 
-	e.GET("api/playlists/:id", func(c echo.Context) error {
+	r.GET("/playlists/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 
 		playlist := &PlaylistResponse{
@@ -1033,7 +1034,7 @@ func main() {
 		return c.JSON(http.StatusOK, playlist)
 	})
 
-	e.DELETE("api/playlists/:id", func(c echo.Context) error {
+	r.DELETE("/playlists/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 
 		query := `DELETE FROM "playlists" WHERE "id" = ?`
@@ -1052,7 +1053,7 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	e.POST("api/playlists/:id", func(c echo.Context) error {
+	r.POST("/playlists/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		name := strings.TrimSpace(c.FormValue("name"))
 		if len(name) == 0 {
@@ -1078,7 +1079,7 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	e.POST("api/playlists/:id/songs", func(c echo.Context) error {
+	r.POST("/playlists/:id/songs", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		sids := []int64{}
 
@@ -1126,7 +1127,7 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	e.DELETE("api/playlists/:pid/songs/:sid", func(c echo.Context) error {
+	r.DELETE("/playlists/:pid/songs/:sid", func(c echo.Context) error {
 		pid := parseUint32(c.Param("pid"), 0)
 		sid := parseUint32(c.Param("sid"), 0)
 
