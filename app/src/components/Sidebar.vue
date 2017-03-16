@@ -77,6 +77,11 @@
                         <span class="fa fa-fw fa-spinner fa-spin"></span> Scanning...
                     </span>
                 </li>
+                <li>
+                    <router-link :to="{ path: '/upload' }">
+                        <span class="fa fa-fw fa-upload"></span> Upload
+                    </router-link>
+                </li>
             </ul>
         </nav>
     </div>

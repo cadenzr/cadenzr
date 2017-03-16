@@ -1070,6 +1070,8 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
+	r.POST("/upload", upload)
+
 	r.POST("/playlists/:id", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		name := strings.TrimSpace(c.FormValue("name"))

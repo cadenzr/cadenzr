@@ -4,9 +4,12 @@
 import * as Vue from 'vue';
 import * as Router from 'vue-router';
 import * as VueResource from 'vue-resource';
+import * as Dropzone from 'vue2-dropzone';
 import * as _ from 'lodash';
+
 Vue.use(VueResource)
 Vue.use(Router);
+Vue.component( 'dropzone', Dropzone );
 
 import * as AudioPlayerComponent from './components/AudioPlayer.vue';
 import * as AlbumsComponent from './components/Albums.vue';
@@ -15,6 +18,7 @@ import * as CurrentQueueComponent from './components/CurrentQueue.vue';
 import * as LoginComponent from './components/Login.vue';
 import * as SidebarComponent from './components/Sidebar.vue';
 import * as PlaylistComponent from './components/Playlist.vue';
+import * as UploadComponent from './components/Upload.vue';
 
 
 import './AudioPlayer';
@@ -42,6 +46,7 @@ export var router = new Router({
           { path: '/current-queue', component: CurrentQueueComponent, meta: { requiresAuth: true } },
           { path: '/login', component: LoginComponent },
           { path: '/playlists/:id', component: PlaylistComponent, meta: { requiresAuth: true } },
+          { path: '/upload', component: UploadComponent, meta: { requiresAuth: true } },
 
     ],
 });
@@ -71,12 +76,16 @@ var app = new Vue({
         'current-queue': CurrentQueueComponent,
         'Sidebar': SidebarComponent,
         'playlist': PlaylistComponent,
+        'upload': UploadComponent,
     },
     mounted: function() {
         let self = this;
         (<any>this).subscriptions.push(PubSub.subscribe(ApiEvents.LoggedOut, () => {
             (<any>self).$router.push('/login');
         }));
+        if(!Api.isAuthenticated()) {
+            (<any>self).$router.push('/login');
+        }
     },
     beforeDestroy: () => {
         _.forEach(this.subscriptions, (s) => {

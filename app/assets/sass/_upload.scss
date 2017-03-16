@@ -1,0 +1,44 @@
+/**
+ * Cadenzr upload component
+ * 
+ * Author: Mathias Beke
+ * Date: March 2017
+ */
+
+.upload {
+
+    padding: 2.5%;
+    
+    div.error {
+        height: 2em;
+        text-align: center;
+    }
+    
+    form {
+        background-color: lighten($black, 4);
+        box-shadow: none !important;
+        border-width: 2px;
+        border-color: $gray;
+        color: lighten($gray, 10);
+        border-radius: 4px;
+        
+        &:hover {
+            background-color: lighten($black, 8);
+        };
+        
+        .dz-image {
+            //height: 120px !important;
+        }
+        
+        .dz-preview .dz-details {
+            background: $black;
+            color: $text-color;
+            border-radius: 4px;
+        }
+        
+        .dz-remove {
+            display: none !important;
+        }
+    }
+
+}

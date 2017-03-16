@@ -351,15 +351,21 @@ class Api {
         PubSub.publish(events.LoggedOut);
     }
 
+    // Check if JWT expired.
+    jwtValid(token: string) : boolean {
+        let decoded = jwt_decode(token);
+        return (decoded.exp >= (Date.now() / 1000));
+    }
+
     isAuthenticated() : boolean {
-        return this.retrieveToken() !== null;
+        return this.retrieveToken() !== null && this.jwtValid(this.retrieveToken());
     }
 
     private storeToken(token: string) {
         localStorage.setItem('api.token', token);
     }
 
-    private retrieveToken() : string {
+    retrieveToken() : string {
         return localStorage.getItem('api.token');
     }
 
