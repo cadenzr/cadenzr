@@ -55,8 +55,6 @@ func scanFilesystem() {
 	}()
 
 	filepath.Walk("media", func(path string, info os.FileInfo, err error) error {
-		// Remove our base directory.
-
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to handle file/dir.")
 			return nil
@@ -74,6 +72,20 @@ func scanFilesystem() {
 
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
+		// First check if file with same path exists.
+		query := `SELECT "id" FROM "songs" WHERE "path" = ?`
+		var exists int64
+		err = db.QueryRow(query, path).Scan(&exists)
+		switch {
+		case err == sql.ErrNoRows:
+		case err != nil:
+			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to check if path exists in database.")
+			return nil
+		default:
+			log.WithFields(log.Fields{"path": path}).Info("Skipping file. Already in database.")
+			return nil
+		}
+
 		// Check if hash of song already in database. If so -> just skip so we don't have to do all the parsing etc again...
 		contents, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -81,8 +93,7 @@ func scanFilesystem() {
 			return nil
 		}
 		md5sum := md5.Sum(contents)
-		query := `SELECT "id" FROM "songs" WHERE "hash" = ?`
-		var exists int64
+		query = `SELECT "id" FROM "songs" WHERE "hash" = ?`
 		err = db.QueryRow(query, hex.EncodeToString(md5sum[:])).Scan(&exists)
 		switch {
 		case err == sql.ErrNoRows:
@@ -94,7 +105,7 @@ func scanFilesystem() {
 			return nil
 		}
 
-		// We only get here if hash is not in database yet.
+		// We only get here if path and hash is not in database yet.
 
 		meta, err := probers.ProbeAudioFile(path)
 		if err != nil {
