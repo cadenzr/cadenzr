@@ -24,6 +24,7 @@ func (s *FileStreamer) Read(p []byte) (n int, err error) {
 
 func (s *FileStreamer) Seek(offset int64, whence int) (n int64, err error) {
 	n, err = s.f.Seek(offset, whence)
+
 	return
 }
 

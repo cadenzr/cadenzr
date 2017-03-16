@@ -385,6 +385,26 @@ func insertIfNotExists(table string, v interface{}, exists map[string]interface{
 	return err
 }
 
+func incrementPlayed(songId int64) (bool, error) {
+	query := `
+		UPDATE "songs"
+		SET "played" = "played" + 1
+		WHERE "id" = ?
+	`
+
+	r, err := db.Exec(query, songId)
+	if err != nil {
+		log.WithFields(log.Fields{"reason": err.Error(), "song": songId}).Error("Could not update song played count.")
+		return false, err
+	}
+
+	if affected, _ := r.RowsAffected(); affected == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func parseUint32(str string, fallback uint32) uint32 {
 	n, err := strconv.Atoi(str)
 	if err != nil {
@@ -830,7 +850,7 @@ func main() {
 		response.WriteString("#EXTM3U\n")
 		for _, song := range album.Songs {
 			response.WriteString("#EXTINF:" + strconv.Itoa(int(math.Ceil(song.Duration.Float64))) + ", " + song.Artist.String + " - " + song.Name + "\n")
-			response.WriteString(endpoint + strconv.Itoa(int(song.Id)) + "/stream\n")
+			response.WriteString(endpoint + strconv.Itoa(int(song.Id)) + "/stream?from=m3u8\n")
 		}
 
 		//response.WriteString("#EXTINF:419,Alice in Chains - Rotten Apple")
@@ -907,6 +927,10 @@ func main() {
 
 		defer streamer.Close()
 
+		if c.FormValue("from") == "m3u8" {
+			incrementPlayed(int64(id))
+		}
+
 		http.ServeContent(c.Response(), c.Request(), song.Name, time.Time{}, streamer)
 		return nil
 	})
@@ -914,19 +938,12 @@ func main() {
 	r.POST("/songs/:id/played", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 
-		query := `
-			UPDATE "songs"
-			SET "played" = "played" + 1
-			WHERE "id" = ?
-		`
-
-		r, err := db.Exec(query, id)
+		ok, err := incrementPlayed(int64(id))
 		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not update song played count.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
-		if affected, _ := r.RowsAffected(); affected == 0 {
+		if !ok {
 			return c.NoContent(http.StatusNotFound)
 		}
 
