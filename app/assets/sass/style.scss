@@ -55,3 +55,34 @@ a {
         cursor: pointer;
     }
 }
+
+
+// Styles for forms and buttons
+
+form {
+    
+    .pure-input,
+    input[type="text"],
+    input[type="password"] {
+        
+        background-color: lighten($black, 2);
+        box-shadow: none !important;
+        border-width: 2px;
+        border-color: $gray;
+        color: lighten($gray, 10);
+        
+        &:focus {
+            border-color: #fff !important;
+        }
+        
+    }
+    
+    .pure-button {
+        background-color: $orange;
+        color: #fff;
+        font-weight: 600;
+    }
+    
+    
+    
+}
