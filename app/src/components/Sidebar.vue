@@ -24,23 +24,38 @@
                     <span class="fa fa-fw fa-play-circle-o"></span> Playing Now
                 </router-link>
             </li>
+            
+            <li>
+              <span class="fa fa-fw fa-list"></span> Playlists <a @click="showAddPlaylist = !showAddPlaylist;"><span class="fa fa-fw" v-bind:class="{'fa-plus': !showAddPlaylist, 'fa-times': showAddPlaylist}"></span></a>
+              
+            
+            </li>
+            
+            <li v-if="showAddPlaylist">
+              <form class="pure-form">
+                <span class="fa fa-fw"></span>
+                <input v-model="playlistName" v-on:keyup.enter="createPlaylist()" v-on:keyup.esc="showAddPlaylist = false;" type="text" class="">
+              </form>
+            </li>
+            
         </ul>
+        
+        
+        <ul class="playlists">
+            <li v-on:dragover="dragover" v-on:drop="dropPlaylist(playlist, $event)" v-for="playlist in playlists">
+                <span class="fa fa-fw"></span>
+                <router-link :to="{ path: '/playlists/' + playlist.id }">
+                    <span class="fa fa-fw fa-music"></span>
+                    {{playlist.name}}
+                </router-link>
+                <span class="fa fa-fw fa-times" v-on:click="deletePlaylist(playlist)"></span>
+            </li>
+        </ul>
+        
     </nav>
 
-    <div class="playlists">
-        <h3>Playlists <a @click="showAddPlaylist = !showAddPlaylist;"><span class="fa fa-fw" v-bind:class="{'fa-plus': !showAddPlaylist, 'fa-times': showAddPlaylist}"></span></a></h3>
-        <input v-model="playlistName" v-on:keyup.enter="createPlaylist()" v-on:keyup.esc="showAddPlaylist = false;" style="color: black" v-if="showAddPlaylist" type="text">
-        <nav>
-            <ul>
-                <li v-on:dragover="dragover" v-on:drop="dropPlaylist(playlist, $event)" v-for="playlist in playlists">
-                    <router-link :to="{ path: '/playlists/' + playlist.id }">
-                        {{playlist.name}}
-                    </router-link>
-                    <span class="fa fa-fw fa-times" v-on:click="deletePlaylist(playlist)"></span>
-                </li>
-            </ul>
-        </nav>
-    </div>
+        
+        
     
     
     <div class="settings">
