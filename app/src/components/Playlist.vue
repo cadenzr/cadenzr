@@ -54,13 +54,15 @@
             },
             mounted () {
                 let self = this;
-
-                Api.getPlaylist(self.$route.params.id).then(playlist => {
-                    self.playlist = new Playlist(playlist);
-                    self.show = true;
-                });
-
-                self.show = true;
+                self.fetchData();
+            },
+            watch: {
+                '$route': 'fetchData'
+            },
+            route: {
+                data() {
+                    console.log('lol');
+                },
             },
             beforeDestroy () {
                 _.forEach(this.subscriptions, (s) => {
@@ -68,6 +70,14 @@
                 });
             },
             methods: {
+                fetchData: function() {
+                    let self = this;
+                    self.show = false;
+                    Api.getPlaylist(self.$route.params.id).then(playlist => {
+                        self.playlist = new Playlist(playlist);
+                        self.show = true;
+                    });
+                },
                 toggleSort: function(key) {
                     this.sortKey = key;
                     if(this.sortOrder === 'asc') {
