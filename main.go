@@ -794,7 +794,7 @@ func main() {
 	})
 
 	// TODO SHOULD BE PROTECTED SOMEHOW.
-	e.GET("/api/albums/(:id)/playlist.m3u8", func(c echo.Context) error {
+	e.GET("/api/albums/:id/playlist.m3u8", func(c echo.Context) error {
 		id := parseUint32(c.Param("id"), 0)
 		query := `
 			SELECT
