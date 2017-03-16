@@ -17,12 +17,14 @@ type FileStreamer struct {
 	f *os.File
 }
 
-func (s *FileStreamer) Read(p []byte) (int, error) {
-	return s.f.Read(p)
+func (s *FileStreamer) Read(p []byte) (n int, err error) {
+	n, err = s.f.Read(p)
+	return
 }
 
-func (s *FileStreamer) Seek(offset int64, whence int) (int64, error) {
-	return s.f.Seek(offset, whence)
+func (s *FileStreamer) Seek(offset int64, whence int) (n int64, err error) {
+	n, err = s.f.Seek(offset, whence)
+	return
 }
 
 func (s *FileStreamer) Close() error {
