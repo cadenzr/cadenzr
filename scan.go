@@ -36,7 +36,7 @@ func scanHandler(scanCh chan (chan struct{})) {
 			requests = append(requests, done)
 			if scanning == false {
 				scanning = true
-				go scanFilesystem()
+				go scanFilesystem("media")
 			}
 		case <-scanDone:
 			for _, done := range requests {
@@ -49,12 +49,12 @@ func scanHandler(scanCh chan (chan struct{})) {
 	}
 }
 
-func scanFilesystem() {
+func scanFilesystem(mediaDir string) {
 	defer func() {
 		scanDone <- struct{}{}
 	}()
 
-	filepath.Walk("media", func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(mediaDir, func(path string, info os.FileInfo, err error) error {
 		// Remove our base directory.
 
 		if err != nil {

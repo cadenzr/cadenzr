@@ -7,7 +7,7 @@
       </span>
     </div>
     
-    <dropzone id="myVueDropzone" url="/api/upload" maxFileSizeInMB="64" useFontAwesome="true" maxNumberOfFiles="64" showRemoveLink="false" v-on:vdropzone-success="scan" v-bind:headers="headers"></dropzone>
+    <dropzone id="myVueDropzone" url="/api/upload" maxFileSizeInMB="64" useFontAwesome="true" maxNumberOfFiles="64" showRemoveLink="false" v-bind:headers="headers"></dropzone>
 
   </div>
 </template>
@@ -36,17 +36,6 @@ export default {
   mounted: function() {
   },
   methods: {
-    scan: function() {
-        let self = this;
-        self.scanning = true;
-        Api.scan()
-        .then(() => {
-            self.scanning = false;
-        })
-        .catch(() => {
-            self.scanning = false;
-        });
-    },
   }
 
 }

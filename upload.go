@@ -39,5 +39,7 @@ func upload(c echo.Context) error {
 		return err
 	}
 
+	scanFilesystem("media/uploads/" + file.Filename)
+
 	return c.HTML(http.StatusOK, fmt.Sprintf("<p>File %s uploaded successfully.</p>", file.Filename))
 }
