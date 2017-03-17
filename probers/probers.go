@@ -266,22 +266,25 @@ func Initialize() {
 	id3Prober := &id3AudioProber{}
 	ffProber := &ffprobeAudioProber{}
 
-	probers = append(probers, &prober{
-		Mime: regexp.MustCompile("audio/(mpeg|mp3)"),
-		Probers: []AudioProber{
-			id3Prober,
-			ffProber,
-		},
-	})
+	mp3Probers := []AudioProber{}
+	flacProbers := []AudioProber{}
+
+	mp3Probers = append(mp3Probers, id3Prober)
 
 	if ffProber.hasFFprobe() {
-		probers = append(probers, &prober{
-			Mime: regexp.MustCompile("audio/flac"),
-			Probers: []AudioProber{
-				ffProber,
-			},
-		})
+		mp3Probers = append(mp3Probers, ffProber)
+		flacProbers = append(flacProbers, ffProber)
 	}
+
+	probers = append(probers, &prober{
+		Mime:    regexp.MustCompile("audio/(mpeg|mp3)"),
+		Probers: mp3Probers,
+	})
+
+	probers = append(probers, &prober{
+		Mime:    regexp.MustCompile("audio/flac"),
+		Probers: flacProbers,
+	})
 
 	for _, prober := range probers {
 		log.Infof("Registered probes for '%s': %s", prober.Mime, prober.Probers)
