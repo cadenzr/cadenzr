@@ -138,7 +138,6 @@ type Song struct {
 	Path     string      `json:"-" db:"path"`
 	CoverId  *NullInt64  `db:"cover_id"`
 	Cover    *Image      `json:"cover"`
-	Hash     string      `db:"hash"`
 	Played   int64       `db:"played"`
 }
 
