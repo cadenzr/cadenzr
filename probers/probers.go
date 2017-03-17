@@ -3,6 +3,7 @@ package probers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"mime"
@@ -263,17 +264,19 @@ var probers = []*prober{}
 
 func Initialize() {
 	id3Prober := &id3AudioProber{}
+	ffProber := &ffprobeAudioProber{}
+
 	probers = append(probers, &prober{
 		Mime: regexp.MustCompile("audio/(mpeg|mp3)"),
 		Probers: []AudioProber{
 			id3Prober,
+			ffProber,
 		},
 	})
 
-	ffProber := &ffprobeAudioProber{}
 	if ffProber.hasFFprobe() {
 		probers = append(probers, &prober{
-			Mime: regexp.MustCompile("audio/.*"),
+			Mime: regexp.MustCompile("audio/flac"),
 			Probers: []AudioProber{
 				ffProber,
 			},
@@ -283,7 +286,16 @@ func Initialize() {
 	for _, prober := range probers {
 		log.Infof("Registered probes for '%s': %s", prober.Mime, prober.Probers)
 	}
+}
 
+func HasProber(mime string) bool {
+	for _, prober := range probers {
+		if prober.Mime.MatchString(mime) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ProbeAudioFile Probes a file and tries to fill in AudioMeta.
@@ -311,10 +323,12 @@ func ProbeAudioFile(file string) (meta *AudioMeta, err error) {
 
 	meta = &AudioMeta{}
 	done := false
+	foundProber := false
 	for _, prober := range probers {
 		if prober.Mime.MatchString(mime) {
 			for _, ap := range prober.Probers {
 				log.WithFields(log.Fields{"mime": mime, "file": file}).Debugf("Using prober '%s'.", ap)
+				foundProber = true
 				tmpMeta, err := ap.ProbeAudio(file)
 				if err != nil {
 					continue
@@ -331,6 +345,10 @@ func ProbeAudioFile(file string) (meta *AudioMeta, err error) {
 				break
 			}
 		}
+	}
+
+	if !foundProber {
+		return nil, errors.New("No prober found for '" + mime + "'")
 	}
 
 	return

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/cadenzr/cadenzr/transcoders"
 )
@@ -46,7 +47,7 @@ func NewFileStreamer(path string) (streamer Streamer, err error) {
 }
 
 func NewTranscodeStreamer(song *Song, codec transcoders.CodecType) (streamer Streamer, err error) {
-	cachePath := "cache" + string(filepath.Separator) + "transcodings" + string(filepath.Separator) + song.Hash + codec.Extension()
+	cachePath := "cache" + string(filepath.Separator) + "transcodings" + string(filepath.Separator) + strconv.Itoa(int(song.Id.Int64)) + codec.Extension()
 	err = os.MkdirAll(filepath.Dir(cachePath), 0755)
 	if err != nil {
 		return

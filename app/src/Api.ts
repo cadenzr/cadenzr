@@ -352,7 +352,7 @@ class Api {
     }
 
     // Check if JWT expired.
-    jwtValid(token: string) : boolean {
+    private jwtValid(token: string) : boolean {
         let decoded = jwt_decode(token);
         return (decoded.exp >= (Date.now() / 1000));
     }

@@ -17,11 +17,6 @@ import (
 
 var scanDone = make(chan struct{})
 
-func isAudio(mime string) bool {
-	mime = strings.ToLower(mime)
-	return strings.Contains(mime, "audio")
-}
-
 func isImage(mime string) bool {
 	mime = strings.ToLower(mime)
 	return strings.Contains(mime, "image")
@@ -53,10 +48,10 @@ func scanFilesystem(mediaDir string) {
 	defer func() {
 		scanDone <- struct{}{}
 	}()
+	
+	newFiles := 0
 
-	filepath.Walk(mediaDir, func(path string, info os.FileInfo, err error) error {
-		// Remove our base directory.
-
+	filepath.Walk("media", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to handle file/dir.")
 			return nil
@@ -67,34 +62,26 @@ func scanFilesystem(mediaDir string) {
 		}
 
 		mimeType := mime.TypeByExtension(filepath.Ext(path))
-		if !isAudio(mimeType) {
+		if !probers.HasProber(mimeType) {
 			log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Skipping file. Unknown mime.")
 			return nil
 		}
 
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
-		// Check if hash of song already in database. If so -> just skip so we don't have to do all the parsing etc again...
-		contents, err := ioutil.ReadFile(path)
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to open song.")
-			return nil
-		}
-		md5sum := md5.Sum(contents)
-		query := `SELECT "id" FROM "songs" WHERE "hash" = ?`
+		// First check if file with same path exists.
+		query := `SELECT "id" FROM "songs" WHERE "path" = ?`
 		var exists int64
-		err = db.QueryRow(query, hex.EncodeToString(md5sum[:])).Scan(&exists)
+		err = db.QueryRow(query, path).Scan(&exists)
 		switch {
 		case err == sql.ErrNoRows:
 		case err != nil:
-			log.WithFields(log.Fields{"reason": err.Error(), "hash": hex.EncodeToString(md5sum[:])}).Error("Failed to check if hash exists in database.")
+			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to check if path exists in database.")
 			return nil
 		default:
 			log.WithFields(log.Fields{"path": path}).Info("Skipping file. Already in database.")
 			return nil
 		}
-
-		// We only get here if hash is not in database yet.
 
 		meta, err := probers.ProbeAudioFile(path)
 		if err != nil {
@@ -134,7 +121,6 @@ func scanFilesystem(mediaDir string) {
 		}
 		s.Mime = mimeType
 		s.Path = path
-		s.Hash = hex.EncodeToString(md5sum[:])
 		if cover != nil {
 			s.SetCover(cover)
 			insertIfNotExists("images", s.Cover, map[string]interface{}{"hash": s.Cover.Hash})
@@ -142,12 +128,12 @@ func scanFilesystem(mediaDir string) {
 		if len(meta.Genre) > 0 {
 			s.Genre.Set(meta.Genre)
 		} else {
-			log.WithFields(log.Fields{"file": path}).Info("No genre found.")
+			log.WithFields(log.Fields{"file": path}).Debug("No genre found.")
 		}
 		if meta.Year != 0 {
 			s.Year.Set(int64(meta.Year))
 		} else {
-			log.WithFields(log.Fields{"file": path}).Info("No year found.")
+			log.WithFields(log.Fields{"file": path}).Debug("No year found.")
 		}
 		if len(meta.Album) > 0 {
 			s.SetAlbum(&Album{
@@ -157,36 +143,49 @@ func scanFilesystem(mediaDir string) {
 
 			s.Album.SetCover(s.Cover)
 
-			if err := insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name}); err != nil {
+			if err = insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name}); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error(), "album": s.Album.Name}).Error("Failed to insert album.")
 			}
 		} else {
-			log.WithFields(log.Fields{"file": path}).Info("No album found.")
+			log.WithFields(log.Fields{"file": path}).Debug("No album found.")
 		}
 		if len(meta.Artist) > 0 {
 			s.SetArtist(&Artist{
 				Name: meta.Artist,
 			})
 
-			if err := insertIfNotExists("artists", s.Artist, map[string]interface{}{"name": s.Artist.Name}); err != nil {
+			if err = insertIfNotExists("artists", s.Artist, map[string]interface{}{"name": s.Artist.Name}); err != nil {
 				log.WithFields(log.Fields{"reason": err.Error(), "artist": s.Artist.Name}).Error("Failed to insert artist.")
 			}
 		} else {
-			log.WithFields(log.Fields{"file": path}).Info("No Artist found.")
+			log.WithFields(log.Fields{"file": path}).Debug("No Artist found.")
 		}
 
 		if meta.Duration != 0 {
 			s.Duration.Set(meta.Duration)
 		} else {
-			log.WithFields(log.Fields{"file": path}).Info("No duration found.")
+			log.WithFields(log.Fields{"file": path}).Debug("No duration found.")
 		}
 
-		if err := insertIfNotExists("songs", s, map[string]interface{}{"hash": s.Hash}); err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name}).Error("Failed to insert song.")
+		ok, err := find("songs", &Song{}, map[string]interface{}{"name": s.Name, "album_id": s.AlbumId})
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name}).Error("Failed to check if song already exists.")
+		} else if !ok {
+			if err := insert("songs", s); err != nil {
+				log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name}).Error("Failed to insert song.")
+			} else {
+				newFiles++
+			}
 		} else {
-			log.WithFields(log.Fields{"song": s.Name}).Info("Song added.")
+			albumName := ""
+			if s.Album != nil {
+				albumName = s.Album.Name
+			}
+			log.WithFields(log.Fields{"song": s.Name, "album": albumName}).Info("Song already in database.")
 		}
 
 		return nil
 	})
+
+	log.Infof("Added %d new songs.", newFiles)
 }

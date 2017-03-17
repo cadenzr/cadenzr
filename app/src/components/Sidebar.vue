@@ -26,7 +26,7 @@
             </li>
             
             <li>
-              <span class="fa fa-fw fa-list"></span> Playlists <a @click="showAddPlaylist = !showAddPlaylist;"><span class="fa fa-fw" v-bind:class="{'fa-plus': !showAddPlaylist, 'fa-times': showAddPlaylist}"></span></a>
+              <span class="fa fa-fw fa-list"></span> Playlists <a v-on:click="showAddPlaylist = !showAddPlaylist;"><span class="fa fa-fw" v-bind:class="{'fa-plus': !showAddPlaylist, 'fa-times': showAddPlaylist}"></span></a>
               
             
             </li>
@@ -34,7 +34,7 @@
             <li v-if="showAddPlaylist">
               <form class="pure-form">
                 <span class="fa fa-fw"></span>
-                <input v-model="playlistName" v-on:keyup.enter="createPlaylist()" v-on:keyup.esc="showAddPlaylist = false;" type="text" class="">
+                <input ref="playlistName" v-model="playlistName" v-on:keyup.enter="createPlaylist()" v-on:keyup.esc="showAddPlaylist = false;" type="text" class="">
               </form>
             </li>
             
@@ -199,6 +199,12 @@ export default {
             self.login = false;
             self.$forceUpdate();
         }));
+
+        self.$watch('showAddPlaylist', () => {
+            if(self.showAddPlaylist) {
+                self.$refs.playlistName.focus();
+            }
+        });
 
         Api.getMe()
         .then((me) => {
