@@ -15,7 +15,7 @@
 <script>
     
 //import Auth from '../Auth'
-
+import {Promise} from 'es6-promise'; // for Travis
 let Api = require('./../Api').default;
 //let router = require('./../main').router;
 
