@@ -51,7 +51,7 @@ func scanFilesystem(mediaDir string) {
 	
 	newFiles := 0
 
-	filepath.Walk("media", func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(mediaDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to handle file/dir.")
 			return nil
