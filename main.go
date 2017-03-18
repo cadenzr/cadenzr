@@ -412,13 +412,6 @@ func parseUint32(str string, fallback uint32) uint32 {
 	return uint32(n)
 }
 
-func corsHeader(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-		return next(c)
-	}
-}
-
 type Config struct {
 	Hostname string `json:"hostname"`
 	Port     uint32 `json:"port"`
@@ -739,7 +732,7 @@ func main() {
 	}()*/
 
 	e := echo.New()
-	e.Use(corsHeader)
+	e.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 
 	e.Static("/", "app/dist")
 	e.Static("/images", "images")
@@ -1103,7 +1096,7 @@ func main() {
 
 		formValues, err := c.FormParams()
 		if err != nil {
-			log.WithFields(log.Fields{"playlist": id, "form": formValues, "reason": err.Error()}).Info("Could not get form params for adding songs to playlist.")
+			log.WithFields(log.Fields{"playlist": id, "form": formValues, "reason": err.Error()}).Error("Could not get form params for adding songs to playlist.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -1118,7 +1111,7 @@ func main() {
 		query := `INSERT INTO "playlist_songs" ("playlist_id", "song_id") VALUES (?, ?)`
 		tx, err := db.Begin()
 		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error()}).Info("Could not start transaction to insert songs into playlist.")
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not start transaction to insert songs into playlist.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 		for _, sid := range sids {
@@ -1126,6 +1119,7 @@ func main() {
 			r, err = tx.Exec(query, id, sid)
 			if err != nil {
 				tx.Rollback()
+				log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to execute query.")
 				return c.NoContent(http.StatusInternalServerError)
 			}
 
@@ -1136,7 +1130,7 @@ func main() {
 		}
 
 		if err = tx.Commit(); err != nil {
-			log.WithFields(log.Fields{"reason": err.Error()}).Info("Failed to commit songs to playlist_songs.")
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Failed to commit songs to playlist_songs.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
