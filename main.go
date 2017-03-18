@@ -428,7 +428,10 @@ func loadConfig() {
 	if err != nil {
 		log.WithFields(log.Fields{"reason": err.Error()}).Warn("Could not load config.json.")
 	} else {
-		json.Unmarshal(raw, &config)
+		err = json.Unmarshal(raw, &config)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Warn("Could not parse config.json.")
+		}
 	}
 
 	config.Hostname = strings.TrimSpace(config.Hostname)
