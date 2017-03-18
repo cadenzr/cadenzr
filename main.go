@@ -428,7 +428,10 @@ func loadConfig() {
 	if err != nil {
 		log.WithFields(log.Fields{"reason": err.Error()}).Warn("Could not load config.json.")
 	} else {
-		json.Unmarshal(raw, &config)
+		err = json.Unmarshal(raw, &config)
+		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Warn("Could not parse config.json.")
+		}
 	}
 
 	config.Hostname = strings.TrimSpace(config.Hostname)
@@ -794,6 +797,7 @@ func main() {
 
 		songs, err := getAlbumSongs(ids...)
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could get album songs.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -885,6 +889,7 @@ func main() {
 		song := &Song{}
 		ok, err := find("songs", song, map[string]interface{}{"id": id})
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Error while searching song stream.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -932,6 +937,7 @@ func main() {
 
 		ok, err := incrementPlayed(int64(id))
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Warn("Could increment played time.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -975,6 +981,7 @@ func main() {
 
 		playlistSongs, err := getPlaylistSongs(ids...)
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not get playlist songs.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -997,6 +1004,7 @@ func main() {
 
 		ok, err := find("playlists", playlist, map[string]interface{}{"name": playlist.Name})
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Error while looking for playlist.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -1005,6 +1013,7 @@ func main() {
 		}
 
 		if err := insert("playlists", playlist); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Could not insert playlist.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -1026,6 +1035,7 @@ func main() {
 
 		ok, err := find("playlists", playlist, map[string]interface{}{"id": playlist.Id})
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Error while looking for playlist.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -1074,6 +1084,7 @@ func main() {
 		playlist := &Playlist{}
 		ok, err := find("playlists", playlist, map[string]interface{}{"id": id})
 		if err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Error while looking for playlist.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 
@@ -1082,6 +1093,7 @@ func main() {
 		}
 
 		if err := update("playlists", playlist, map[string]interface{}{"id": playlist.Id.Int64}); err != nil {
+			log.WithFields(log.Fields{"reason": err.Error()}).Error("Couldn't update playlist.")
 			return c.NoContent(http.StatusInternalServerError)
 		}
 

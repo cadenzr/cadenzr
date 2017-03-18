@@ -17,8 +17,9 @@
     .logo {
         background-image: url('../images/logo.svg');
         background-size: contain;
-        width: 30%;
-        padding-top: 30%;
+        background-repeat: no-repeat;
+        width: 25%;
+        padding-top: 25%;
         margin: 1em auto;
         
         opacity: 0.85;

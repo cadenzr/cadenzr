@@ -21,6 +21,6 @@ script:
   - go build
   - go test -v ./...
   - cd app
-  - npm install gulp
+  - cp src/env.ts.example src/env.ts
   - npm install
-  - gulp
+  - npm run build
