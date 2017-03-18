@@ -48,7 +48,7 @@ func scanFilesystem(mediaDir string) {
 	defer func() {
 		scanDone <- struct{}{}
 	}()
-	
+
 	newFiles := 0
 
 	filepath.Walk(mediaDir, func(path string, info os.FileInfo, err error) error {
@@ -101,7 +101,7 @@ func scanFilesystem(mediaDir string) {
 					if err = ioutil.WriteFile(destination, meta.CoverBufer, 0666); err == nil {
 						cover = &Image{
 							Path: destination,
-							Link: destination,
+							Link: "/" + destination,
 							Mime: mimeCover,
 							Hash: hash,
 						}

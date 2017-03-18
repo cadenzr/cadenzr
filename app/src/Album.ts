@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 
 import Song from './Song';
+import env from './env';
 
 class Album {
     id: number;
@@ -10,44 +11,44 @@ class Album {
     constructor(data?: any) {
         this.songs = [];
 
-        if(data) {
-           _.assign(this, data);
+        if (data) {
+            _.assign(this, data);
         }
     }
 
     setSongs(songs: Array<Song>) {
         this.songs = songs;
 
-        if(!this.hasSongs()) {
+        if (!this.hasSongs()) {
             return;
         }
     }
 
-    getSongs() : Array<Song> {
+    getSongs(): Array<Song> {
         return this.songs;
     }
 
-    getArtist() : string {
-        if(this.songs.length === 0) {
+    getArtist(): string {
+        if (this.songs.length === 0) {
             return '';
         }
 
-        if(this.songs[0].artist) {
+        if (this.songs[0].artist) {
             return this.songs[0].artist;
         }
 
         return '';
     }
 
-    getCover() : string {
-        if(!this.cover) {
+    getCoverUrl(): string {
+        if (!this.cover) {
             return '';
         }
 
-        return this.cover;
+        return env.backend + this.cover;
     }
 
-    private hasSongs() : boolean {
+    private hasSongs(): boolean {
         return this.songs.length > 0;
     }
 }

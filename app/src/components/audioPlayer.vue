@@ -30,7 +30,7 @@
                        v-bind:max="duration">
                 <img v-if="currentSong"
                      class="cover"
-                     :src="currentSong.cover"></img>
+                     :src="currentSong.getCoverUrl()"></img>
                 <p v-if="currentSong"
                    class="song">{{currentSong.name}}</p>
                 <p v-if="currentSong"

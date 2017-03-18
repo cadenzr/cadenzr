@@ -10,7 +10,7 @@
                 <router-link :to="{ path: album.link }">
                     <div class="album">
                         <div class="album-cover"
-                             :style="{ 'background-image': 'url(' + album.getCover() + ')' }">
+                             :style="{ 'background-image': 'url(' + album.getCoverUrl() + ')' }">
                             <div class="album-play">
                                 <div class="album-play-button"
                                      @click.prevent="playAlbum(album)">
@@ -96,7 +96,7 @@
                                 return new Song(song);
                             });
 
-                            album.link = env.backend + '/albums/' + album.id;
+                            album.link = 'albums/' + album.id;
 
                             return new Album(album);
                         });

@@ -3,7 +3,7 @@
          class="single-album">
         <div class="album-meta pure-g">
             <div class="album-meta-cover pure-u-4-24">
-                <img :src="album.getSongs()[0].cover">
+                <img :src="album.getSongs()[0].getCoverUrl()">
             </div>
     
             <div class="album-meta-info pure-u-20-24">

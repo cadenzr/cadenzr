@@ -3,6 +3,8 @@ import * as _ from 'lodash';
 import Song from './Song';
 import PubSub from './PubSub';
 
+import env from './env';
+
 let events = {
     SongChanged: 'AudioPlayer:song-changed',
     // Send once when song starts playing. But not when playing after pause etc...
@@ -239,7 +241,7 @@ class AudioPlayer {
             };
         });
 
-        self.audioEl.src = 'api/songs/' + s.id + '/stream';
+        self.audioEl.src = env.backend + '/api/songs/' + s.id + '/stream';
         self.audioEl.load(); // Required so events are being generated.
 
         return p;
