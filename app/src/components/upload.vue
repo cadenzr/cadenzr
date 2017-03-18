@@ -3,18 +3,17 @@
     <div class="error">
       <p v-if="error"><span class="fa fa-warning"></span> {{ error }}</p>
       <span v-if="scanning">
-            <span class="fa fa-fw fa-spinner fa-spin"></span> Scanning...
+                  <span class="fa fa-fw fa-spinner fa-spin"></span> Scanning...
       </span>
     </div>
   
     <dropzone id="myVueDropzone"
-              url="/api/upload"
+              :url="uploadUrl"
               maxFileSizeInMB="64"
               useFontAwesome="true"
               maxNumberOfFiles="64"
               showRemoveLink="false"
               v-bind:headers="headers"></dropzone>
-  
   </div>
 </template>
 
@@ -30,6 +29,7 @@
     import PubSub from './../PubSub';
     import AudioPlayerEvents from './../AudioPlayer';
     import AudioPlayer from './../AudioPlayer';
+    import env from '@/env';
 
         interface UploadComponent extends Vue {
                     error: string;
@@ -42,6 +42,7 @@ export default {
     return {
       error: '',
       scanning: false,
+      uploadUrl: env.backend + '/api/upload',
     }
   },
   computed: {
