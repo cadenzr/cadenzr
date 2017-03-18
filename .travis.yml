@@ -18,6 +18,7 @@ install:
 
 script:
   - go build
+  - go test -v ./...
   - cd app
   - npm install gulp
   - npm install
