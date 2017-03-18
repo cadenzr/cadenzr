@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	
+
 	log "github.com/cadenzr/cadenzr/log"
 )
 
@@ -105,12 +105,14 @@ var probers = []*prober{}
 
 func Initialize() {
 	id3Prober := &id3AudioProber{}
+	_ = id3Prober
+	genericTagProber := &genericTagAudioProber{}
 	ffProber := &ffprobeAudioProber{}
 
 	mp3Probers := []AudioProber{}
 	flacProbers := []AudioProber{}
 
-	mp3Probers = append(mp3Probers, id3Prober)
+	mp3Probers = append(mp3Probers, genericTagProber)
 
 	if ffProber.hasFFprobe() {
 		mp3Probers = append(mp3Probers, ffProber)
