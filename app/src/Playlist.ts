@@ -7,7 +7,7 @@ class Playlist {
     name: string;
     songs: Array<Song>;
 
-    constructor(data: any) {
+    constructor(data?: any) {
         this.songs = [];
 
         if(data) {

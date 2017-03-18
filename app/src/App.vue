@@ -1,17 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Cadenzr</title>
-
-    <link rel="stylesheet" href="/static/vendor/font-awesome/css/font-awesome.min.css">
-</style>
-</head>
-<body>
-
-  <div id="app">
+<template>
         <audio-player ref="player"></audio-player>
         
         <div class="pure-g">
@@ -33,8 +21,13 @@
         <div class="audio-player-placeholder">
             
         </div>
-  </div>
+</template>
 
-    <!-- built files will be auto injected -->
-</body>
-</html>
+<script lang="ts">
+import Vue from "vue";
+
+
+export default {
+  name: "app",
+} as Vue.ComponentOptions<Vue>;
+</script>

@@ -1,12 +1,19 @@
 <template>
-    <div v-if="show" class="albumlist pure-g">
-        <div v-for="(album, $index) in albums" class="pure-u-1-4">
-            <div v-on:dragstart="dragstart" class="album-container" draggable="true" :data-album-index="$index">
+    <div v-if="show"
+         class="albumlist pure-g">
+        <div v-for="(album, $index) in albums"
+             class="pure-u-1-4">
+            <div v-on:dragstart="dragstart"
+                 class="album-container"
+                 draggable="true"
+                 :data-album-index="$index">
                 <router-link :to="{ path: album.link }">
                     <div class="album">
-                        <div class="album-cover" :style="{ 'background-image': 'url(' + album.getCover() + ')' }">
+                        <div class="album-cover"
+                             :style="{ 'background-image': 'url(' + album.getCover() + ')' }">
                             <div class="album-play">
-                                <div class="album-play-button" @click.prevent="playAlbum(album)">
+                                <div class="album-play-button"
+                                     @click.prevent="playAlbum(album)">
                                     <span class="fa fa-fw fa-play"></span>
                                 </div>
                             </div>
@@ -20,20 +27,32 @@
                     </div>
                 </router-link>
             </div>
-        </div>        
+        </div>
     </div>
-   
 </template>
 
-<script>
-    var $ = require('jquery');
-    let _ = require('lodash');
-    let Album = require('./../Album').default;
-    let Song = require('./../Song').default;
-    let Api = require('./../Api').default;
-    let AudioPlayer = require('./../AudioPlayer').default;
+<script lang="ts">
+    import * as $ from 'jquery';
+    import * as _ from 'lodash';
+    import Api from './../Api';
+    import Album from './../Album';
+    import Song from './../Song';
+    import Playlist from './../Playlist';
+    import PubSub from './../PubSub';
+    import AudioPlayerEvents from './../AudioPlayer';
+    import AudioPlayer from './../AudioPlayer';
+    import env from '@/env';
+    import Vue from 'vue';
 
-    module.exports = {
+    interface Albums extends Vue {
+                    albums: Array<Album>;
+                    show: boolean;
+                    sortOrder: string;
+                    sortKey: string;
+    }
+
+    export default {
+        name: 'albums',
             data: function () {
                 return {
                     albums: [],
@@ -44,7 +63,7 @@
                 }
             },
             mounted () {
-                this.loadAlbums();
+                (<any>this).loadAlbums();
             },
             computed: {
                 sortedAlbums: function() {
@@ -52,7 +71,7 @@
                 }
             },
             methods: {
-                dragstart: function(e) {
+                dragstart: function(e : any) {
                     let index = e.srcElement.getAttribute('data-album-index');
                     let album = this.albums[index];
                     let img = new Image();
@@ -60,7 +79,7 @@
                     e.dataTransfer.setData('songs', JSON.stringify(album.getSongs()));
                     e.dataTransfer.setDragImage(img, 0, 0);
                 },
-                toggleSort: function(key) {
+                toggleSort: function(key: string) {
                     this.sortKey = key;
                     if(this.sortOrder === 'asc') {
                         this.sortOrder = 'desc';
@@ -72,11 +91,12 @@
                     let self = this
                     Api.getAlbums()
                     .then(albums => {
-                        self.albums = _.map(albums, (album) => {
-                            album.link = 'albums/' + album.id;
+                        self.albums = _.map(albums, (album : any) => {
                             album.songs = _.map(album.songs, (song) => {
                                 return new Song(song);
                             });
+
+                            album.link = env.backend + '/albums/' + album.id;
 
                             return new Album(album);
                         });
@@ -84,7 +104,7 @@
                         self.show = true;
                     });
                 },
-                playAlbum: function(album) {
+                playAlbum: function(album : Album) {
                     AudioPlayer.setQueue(album.getSongs());
                     AudioPlayer.reload()
                     .then(() => {
@@ -92,5 +112,5 @@
                     });
                 },
             }
-    };
+    } as Vue.ComponentOptions<Albums>;
 </script>

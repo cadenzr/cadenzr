@@ -3,10 +3,11 @@ import * as _ from 'lodash';
 import Song from './Song';
 
 class Album {
+    id: number;
     songs: Array<Song>;
     cover: string;
 
-    constructor(data: any) {
+    constructor(data?: any) {
         this.songs = [];
 
         if(data) {

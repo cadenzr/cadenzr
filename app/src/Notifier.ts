@@ -1,4 +1,3 @@
-import {Promise} from 'es6-promise';
 import * as _ from 'lodash';
 
 // typescript does not recognize Notification.

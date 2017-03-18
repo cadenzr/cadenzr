@@ -1,4 +1,3 @@
-import {Promise} from 'es6-promise';
 import * as _ from 'lodash';
 
 import Song from './Song';
@@ -24,7 +23,7 @@ class AudioPlayer {
 
         this.currentQueue = [];
         this.currentIndex = null;
-        this.playingSong = null;        
+        this.playingSong = null;
 
         this.audioEl = document.createElement('audio');
         this.audioEl.style.display = 'none';
@@ -46,8 +45,9 @@ class AudioPlayer {
 
         document.body.appendChild(this.audioEl);
 
-        let cachedQueue = JSON.parse(localStorage.getItem('AudioPlayer.currentQueue'));
-        if(cachedQueue !== null) {
+        let cachedQueue = <any>localStorage.getItem('AudioPlayer.currentQueue');
+        cachedQueue = JSON.parse(cachedQueue);
+        if (cachedQueue !== null) {
             cachedQueue = _.map(cachedQueue, (song: Song) => {
                 return new Song(song);
             });
@@ -59,8 +59,8 @@ class AudioPlayer {
     /**
      * Get the current playing song.
      */
-    currentSong() : Song {
-        if(this.currentIndex === null) {
+    currentSong(): Song | null {
+        if (this.currentIndex === null) {
             return null;
         }
 
@@ -72,14 +72,14 @@ class AudioPlayer {
      * 
      * @param s Check if this song is the current song.
      */
-    isCurrentSong(s: Song | number) : boolean {
+    isCurrentSong(s: Song | number): boolean {
         let cs = this.currentSong();
-        if(cs === null) {
+        if (cs === null) {
             return false;
         }
 
         let id = 0;
-        if(s instanceof Song) {
+        if (s instanceof Song) {
             id = s.id;
         } else {
             id = s;
@@ -92,7 +92,12 @@ class AudioPlayer {
         let self = this;
         this.audioEl.play();
         this.audioEl.onplaying = () => {
-            if(self.playingSong === null || self.playingSong.id !== this.currentSong().id) {
+            let currentSong = this.currentSong();
+            if (currentSong === null) {
+                return;
+            }
+
+            if (self.playingSong === null || self.playingSong.id !== currentSong.id) {
                 PubSub.publish(events.SongStarted, this.currentSong());
             }
             self.playingSong = self.currentSong();
@@ -106,41 +111,41 @@ class AudioPlayer {
         PubSub.publish(events.Pause, this.currentSong());
     }
 
-    next() : Promise<void> {
-        if(this.currentIndex === null) {
+    next(): Promise<void> {
+        if (this.currentIndex === null) {
             return Promise.resolve();
         }
 
         this.currentIndex++;
-        if(this.currentIndex >= this.currentQueue.length) {
+        if (this.currentIndex >= this.currentQueue.length) {
             this.currentIndex = 0;
         }
 
         return this.reload()
-        .then(() => {
-            this.play();
-        });
+            .then(() => {
+                this.play();
+            });
     }
 
-    prev() : Promise<void> {
-        if(this.currentIndex === null) {
+    prev(): Promise<void> {
+        if (this.currentIndex === null) {
             return Promise.resolve();
         }
 
         this.currentIndex--;
-        if(this.currentIndex < 0) {
-            this.currentIndex = this.currentQueue.length-1;
+        if (this.currentIndex < 0) {
+            this.currentIndex = this.currentQueue.length - 1;
         }
 
         return this.reload()
-        .then(() => {
-            this.play();
-        });
+            .then(() => {
+                this.play();
+            });
     }
 
     setQueue(queue: Array<Song>) {
         this.currentQueue = queue;
-        if(this.currentQueue.length === 0) {
+        if (this.currentQueue.length === 0) {
             this.currentIndex = null;
         } else {
             this.currentIndex = 0;
@@ -151,7 +156,7 @@ class AudioPlayer {
         PubSub.publish(events.QueueChanged, this.currentQueue);
     }
 
-    getQueue() : Array<Song> {
+    getQueue(): Array<Song> {
         return this.currentQueue;
     }
 
@@ -163,7 +168,7 @@ class AudioPlayer {
      */
     setCurrentSong(s: Song) {
         let index = _.findIndex(this.currentQueue, (s2) => { return s2.id === s.id; });
-        if(index === -1) {
+        if (index === -1) {
             return Promise.resolve();
         }
 
@@ -202,27 +207,31 @@ class AudioPlayer {
         this.audioEl.volume = v;
     }
 
-    getVolume() : number {
+    getVolume(): number {
         return this.audioEl.volume * 100;
     }
 
-    reload() : Promise<void> {
-        if(this.currentIndex === null) {
+    reload(): Promise<void> {
+        if (this.currentIndex === null) {
             return Promise.resolve();
         }
 
         let s = this.currentSong()
+        if (s === null) {
+            return Promise.reject<void>('No song found.');
+        }
+
         return this.loadSong(s, true);
     }
 
-    private loadSong(s: Song, publish: boolean) : Promise<any> {
+    private loadSong(s: Song, publish: boolean): Promise<any> {
         var self = this;
 
         let p = new Promise<any>((resolve) => {
             self.audioEl.ondurationchange = () => {
                 s.duration = self.audioEl.duration;
 
-                if(publish) {
+                if (publish) {
                     PubSub.publish(events.SongChanged, s);
                 }
 
@@ -238,9 +247,11 @@ class AudioPlayer {
 
     private audioEl: HTMLMediaElement
     private currentQueue: Array<Song>;
-    private currentIndex: number;
-    private playingSong: Song;
+    private currentIndex: number | null;
+    private playingSong: Song | null;
 }
 
-export {events};
-export default new AudioPlayer();
+export { events };
+let player = new AudioPlayer();
+export { player };
+export default player;
