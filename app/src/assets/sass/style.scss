@@ -5,17 +5,14 @@
  * Date: March 2017
  */
 
+
+@import "variables";
+
+
 @import "pure";
+@import "pure-grids-responsive";
 @import url('https://fonts.googleapis.com/css?family=Open+Sans:300,400,600');
 
-/* Color scheme */
-$black: rgba(47, 47, 47, 1);
-$orange: rgba(211, 97, 53, 1);
-$gray: rgba(205, 205, 205, 1);
-$color4: rgba(223, 248, 235, 1);
-$color5: rgba(1, 22, 56, 1);
-
-$text-color: lighten($gray, 10);
 
 body {
     font-family: 'Open Sans', sans-serif;

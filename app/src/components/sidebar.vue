@@ -1,5 +1,9 @@
 <template>
-    <div class="sidebar">
+    <div class="sidebar" v-bind:class="{ active: isActive }">
+        
+        <a class="toggle-hide" @click="toggleNav"><span class="fa fa-fw fa-close"></span></a>
+        <a class="toggle-show" @click="toggleNav"><span class="fa fa-fw fa-bars"></span></a>
+        
         <!--<h1>Cadenzr</h1>-->
     
         <div class="logo">
@@ -114,6 +118,7 @@
       playlists: Array<Playlist>;
       showAddPlaylist: boolean;
       playlistName: string;
+      isActive: boolean;
     }
 
 export default {
@@ -129,9 +134,13 @@ export default {
       playlists: [],
       showAddPlaylist: false,
       playlistName: '',
+      isActive: false,
     }
   },
   methods: {
+      toggleNav: function() {
+        this.isActive = !this.isActive;
+      },
       dropQueue: function(e:any) {
           let songs = e.dataTransfer.getData('songs');
           if(songs) {

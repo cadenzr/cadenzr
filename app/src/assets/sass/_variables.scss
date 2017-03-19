@@ -1,0 +1,15 @@
+/* Color scheme */
+$black: rgba(47, 47, 47, 1);
+$orange: rgba(211, 97, 53, 1);
+$gray: rgba(205, 205, 205, 1);
+$color4: rgba(223, 248, 235, 1);
+$color5: rgba(1, 22, 56, 1);
+
+$text-color: lighten($gray, 10);
+
+
+/* Responsive breakpoints */
+$sm: 35.5em;	// ≥ 568px	.pure-u-sm-*
+$md: 48em;	// ≥ 768px	.pure-u-md-*
+$lg: 64em; 	// ≥ 1024px	.pure-u-lg-*
+$xl: 80em;	// ≥ 1280px	.pure-u-xl-*

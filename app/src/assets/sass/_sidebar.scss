@@ -7,18 +7,54 @@
 
 .sidebar {
     
+    .toggle-hide,
+    .toggle-show {
+        position: absolute;
+        background-color: darken($black, 3);
+        display: block;
+        padding: 0.25em;
+        font-size: 1.2em;
+    }
+    
+    .toggle-show {
+        margin-left: 100%;
+    }
+    
     font-family: 'Open Sans' sans-serif;
     background-color: darken($black, 3);
     color: $text-color;
-    width: 16.66666%;
+    
+    width: 100%;
+    
+    @media screen and (min-width: $md) {
+        width: 16.66666%;
+        transform: translate(0, 0);
+        .toggle-show,
+        .toggle-hide {
+            display: none;
+        }
+    }
+    
+    
+    // Slide-in animation
+    transform: translate(-100%, 0);
+    transition: 0.5s transform ease;
+    
+    &.active {
+        transform: translate(0, 0);
+    }
+    
+    
     height: 100%;
     position: fixed;
+    top: 0;
     
     .logo {
         background-image: url('../images/logo.svg');
         background-size: contain;
         background-repeat: no-repeat;
         width: 25%;
+        max-width: 80px;
         padding-top: 25%;
         margin: 1em auto;
         

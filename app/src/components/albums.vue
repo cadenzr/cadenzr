@@ -2,7 +2,7 @@
     <div v-if="show"
          class="albumlist pure-g">
         <div v-for="(album, $index) in albums"
-             class="pure-u-1-4">
+             class="pure-u-1-2 pure-u-md-1-3 pure-u-lg-1-4">
             <div v-on:dragstart="dragstart"
                  class="album-container"
                  draggable="true"
