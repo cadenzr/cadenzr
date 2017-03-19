@@ -13,19 +13,19 @@
         <nav>
             <ul>
                 <li>
-                    <router-link :to="{ path: '/albums' }">
+                    <router-link :to="{ path: '/albums' }" v-on:click.native="toggleNav">
                         <span class="fa fa-fw fa-caret-square-o-right"></span> Albums
                     </router-link>
                 </li>
                 <li>
-                    <router-link :to="{ path: '/artists' }">
+                    <router-link :to="{ path: '/artists' }" v-on:click.native="toggleNav">
                         <span class="fa fa-fw fa-microphone"></span> Artists
                     </router-link>
                 </li>
     
                 <li v-on:drop="dropQueue"
                     v-on:dragover="dragover">
-                    <router-link :to="{ path: '/current-queue' }">
+                    <router-link :to="{ path: '/current-queue' }" v-on:click.native="toggleNav">
                         <span class="fa fa-fw fa-play-circle-o"></span> Playing Now
                     </router-link>
                 </li>
@@ -54,7 +54,7 @@
                     v-on:drop="dropPlaylist(playlist, $event)"
                     v-for="playlist in playlists">
                     <span class="fa fa-fw"></span>
-                    <router-link :to="{ path: '/playlists/' + playlist.id }">
+                    <router-link :to="{ path: '/playlists/' + playlist.id }" v-on:click.native="toggleNav">
                         <span class="fa fa-fw fa-music"></span> {{playlist.name}}
                     </router-link>
                     <span class="fa fa-fw fa-times"
@@ -85,7 +85,7 @@
                         </span>
                     </li>
                     <li>
-                        <router-link :to="{ path: '/upload' }">
+                        <router-link :to="{ path: '/upload' }" v-on:click.native="toggleNav">
                             <span class="fa fa-fw fa-upload"></span> Upload
                         </router-link>
                     </li>
@@ -175,6 +175,7 @@ export default {
       logout: function() {
           //this.$parent.auth.logout();
           Api.logout();
+          this.isActive = false;
       },
       scan: function() {
           let self = this;
