@@ -11,6 +11,9 @@ class Notifier {
     }
 
     notify(title: string, options?: any) {
+        if(!this.nativeSupport()) {
+            return;
+        }
         let doNotification = () => {
             new Notification(title, options);
         };
