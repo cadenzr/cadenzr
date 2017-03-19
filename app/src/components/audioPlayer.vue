@@ -1,7 +1,7 @@
 <template>
     <div class="audio-player">
         <div class="pure-g">
-            <div class="pure-u-4-24 playback-controls">
+            <div class="pure-u-1 pure-u-md-4-24 playback-controls">
                 <a class="prev"
                    v-on:click="prev">
                     <span class="fa fa-step-backward"></span>
@@ -21,7 +21,7 @@
                     <span class="fa fa-step-forward"></span>
                 </a>
             </div>
-            <div class="pure-u-16-24 current-song">
+            <div class="pure-u-1 pure-u-md-16-24 current-song">
                 <input ref="timeSlider"
                        class="time-slider"
                        type="range"
@@ -36,7 +36,7 @@
                 <p v-if="currentSong"
                    class="artist">{{currentSong.artist}}</p>
             </div>
-            <div class="pure-u-4-24 volume-controls">
+            <div class="pure-u-1 pure-u-md-4-24 volume-controls">
                 <input type="range"
                        class="volume-slider"
                        v-model="volume"

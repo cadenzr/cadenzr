@@ -26,6 +26,7 @@ $audio-player-size: 80px;
 
         $size: 40px;
         padding-top: ($audio-player-size - ($size * 1.35))/2;
+        height: $audio-player-size;
 
         text-align: center;
 
@@ -124,6 +125,16 @@ $audio-player-size: 80px;
                 top: $audio-player-size / 2;
             }
 
+        }
+        
+        
+        @media screen and (max-width: $md) {
+            margin-top: -$audio-player-size - 13px;
+            background: transparent;
+            z-index: -1;
+            p {
+                display: none;
+            }
         }
 
     }
