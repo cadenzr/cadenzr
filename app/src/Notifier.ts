@@ -5,7 +5,7 @@ declare var Notification: any;
 
 class Notifier {
     constructor() {
-        if(this.nativeSupport) {
+        if(this.nativeSupport()) {
             this.notification = Notification;
         }
     }
