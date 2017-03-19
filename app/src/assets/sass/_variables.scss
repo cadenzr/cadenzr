@@ -10,6 +10,6 @@ $text-color: lighten($gray, 10);
 
 /* Responsive breakpoints */
 $sm: 35.5em;	// ≥ 568px	.pure-u-sm-*
-$md: 48em;	// ≥ 768px	.pure-u-md-*
+$md: 48em + 7.5em;	// ≥ 768px	.pure-u-md-*
 $lg: 64em; 	// ≥ 1024px	.pure-u-lg-*
 $xl: 80em;	// ≥ 1280px	.pure-u-xl-*

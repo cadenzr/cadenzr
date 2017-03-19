@@ -1,15 +1,16 @@
 <template>
     <div class="sidebar" v-bind:class="{ active: isActive }">
+
+      
+      <div class="sidebar-container">
         
-        <a class="toggle-hide" @click="toggleNav"><span class="fa fa-fw fa-close"></span></a>
-        <a class="toggle-show" @click="toggleNav"><span class="fa fa-fw fa-bars"></span></a>
-        
+                
         <!--<h1>Cadenzr</h1>-->
-    
+        
         <div class="logo">
-    
+        
         </div>
-    
+        
         <nav>
             <ul>
                 <li>
@@ -22,19 +23,19 @@
                         <span class="fa fa-fw fa-microphone"></span> Artists
                     </router-link>
                 </li>
-    
+        
                 <li v-on:drop="dropQueue"
                     v-on:dragover="dragover">
                     <router-link :to="{ path: '/current-queue' }" v-on:click.native="toggleNav">
                         <span class="fa fa-fw fa-play-circle-o"></span> Playing Now
                     </router-link>
                 </li>
-    
+        
                 <li>
                     <span class="fa fa-fw fa-list"></span> Playlists <a v-on:click="showAddPlaylist = !showAddPlaylist;"><span class="fa fa-fw" v-bind:class="{'fa-plus': !showAddPlaylist, 'fa-times': showAddPlaylist}"></span></a>
-    
+        
                 </li>
-    
+        
                 <li v-if="showAddPlaylist">
                     <form class="pure-form">
                         <span class="fa fa-fw"></span>
@@ -46,9 +47,9 @@
                                class="">
                     </form>
                 </li>
-    
+        
             </ul>
-    
+        
             <ul class="playlists">
                 <li v-on:dragover="dragover"
                     v-on:drop="dropPlaylist(playlist, $event)"
@@ -61,39 +62,43 @@
                           v-on:click="deletePlaylist(playlist)"></span>
                 </li>
             </ul>
-    
+        
         </nav>
-    
-        <div class="settings">
-            <nav>
-                <ul v-if="login">
-                    <li>
-                        <span class="fa fa-fw fa-user-circle-o"></span> {{me.username}}
-                    </li>
-                    <li>
-                        <a @click="logout">
-                            <span class="fa fa-fw fa-sign-out"></span> Logout
-                        </a>
-                    </li>
-                    <li>
-                        <a v-if="!scanning"
-                           @click="scan">
-                            <span class="fa fa-fw fa-refresh"></span> Scan
-                        </a>
-                        <span v-if="scanning">
-                            <span class="fa fa-fw fa-spinner fa-spin"></span> Scanning...
-                        </span>
-                    </li>
-                    <li>
-                        <router-link :to="{ path: '/upload' }" v-on:click.native="toggleNav">
-                            <span class="fa fa-fw fa-upload"></span> Upload
-                        </router-link>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    
-    </div>
+        
+        <nav>
+            <ul v-if="login">
+                <li>
+                    <span class="fa fa-fw fa-user-circle-o"></span> {{me.username}}
+                </li>
+                <li>
+                    <a @click="logout">
+                        <span class="fa fa-fw fa-sign-out"></span> Logout
+                    </a>
+                </li>
+                <li>
+                    <a v-if="!scanning"
+                       @click="scan">
+                        <span class="fa fa-fw fa-refresh"></span> Scan
+                    </a>
+                    <span v-if="scanning">
+                        <span class="fa fa-fw fa-spinner fa-spin"></span> Scanning...
+                    </span>
+                </li>
+                <li>
+                    <router-link :to="{ path: '/upload' }" v-on:click.native="toggleNav">
+                        <span class="fa fa-fw fa-upload"></span> Upload
+                    </router-link>
+                </li>
+            </ul>
+        </nav>
+
+        
+      </div><!-- .sidebar-container -->
+        
+      <a class="toggle-hide" @click="toggleNav"><span class="fa fa-fw fa-close"></span></a>
+      <a class="toggle-show" @click="toggleNav"><span class="fa fa-fw fa-bars"></span></a>
+            
+    </div><!-- .sidebar -->
 </template>
 
 <script lang="ts">
