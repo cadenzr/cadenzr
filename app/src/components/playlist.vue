@@ -8,9 +8,9 @@
                 <tr>
                     <th>#</th>
                     <th><a>Title</a></th>
-                    <th><a>Artist</a></th>
-                    <th><a>Album</a></th>
-                    <th><a>Year</a></th>
+                    <th class="sm-hide"><a>Artist</a></th>
+                    <th class="md-hide"><a>Album</a></th>
+                    <th class="md-hide"><a>Year</a></th>
                     <th></th>
                 </tr>
             </thead>
@@ -19,9 +19,9 @@
                     v-bind:class="{ playing: player.isCurrentSong(song) }">
                     <td>{{$index+1}}</td>
                     <td>{{song.name}}</td>
-                    <td>{{song.artist}}</td>
-                    <td>{{song.album}}</td>
-                    <td>{{song.year}}</td>
+                    <td class="sm-hide">{{song.artist}}</td>
+                    <td class="md-hide">{{song.album}}</td>
+                    <td class="md-hide">{{song.year}}</td>
                     <td><a v-on:click="removeSong(song);"><span class="fa fa-fw fa-times"></span></a></td>
                 </tr>
             </tbody>

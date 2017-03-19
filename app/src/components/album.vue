@@ -19,10 +19,10 @@
                     <tr>
                         <th>#</th>
                         <th><a v-on:click="toggleSort('name')">Title</a></th>
-                        <th><a v-on:click="toggleSort('artist')">Artist</a></th>
-                        <th><a v-on:click="toggleSort('album')">Album</a></th>
-                        <th><a v-on:click="toggleSort('year')">Year</a></th>
-                        <th><a v-on:click="toggleSort('played')">Plays</a></th>
+                        <th class="sm-hide"><a v-on:click="toggleSort('artist')">Artist</a></th>
+                        <th class="md-hide"><a v-on:click="toggleSort('album')">Album</a></th>
+                        <th class="md-hide"><a v-on:click="toggleSort('year')">Year</a></th>
+                        <th class="md-hide"><a v-on:click="toggleSort('played')">Plays</a></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,10 +31,10 @@
                         v-bind:class="{ playing: player.isCurrentSong(song) }">
                         <td>{{$index+1}}</td>
                         <td>{{song.name}}</td>
-                        <td>{{song.artist}}</td>
-                        <td>{{song.album}}</td>
-                        <td>{{song.year}}</td>
-                        <td>{{song.played}}</td>
+                        <td class="sm-hide">{{song.artist}}</td>
+                        <td class="md-hide">{{song.album}}</td>
+                        <td class="md-hide">{{song.year}}</td>
+                        <td class="md-hide">{{song.played}}</td>
                     </tr>
                 </tbody>
             </table>

@@ -32,6 +32,18 @@ table {
             &:first-child {
                 color: darken($gray, 25);
             };
+            
+            &.md-hide {
+                @media screen and (max-width: $md) {
+                    display: none;
+                }
+            }
+            
+            &.sm-hide {
+                @media screen and (max-width: $sm) {
+                    display: none;
+                }
+            }
         }
         
         th {
