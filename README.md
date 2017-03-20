@@ -1,5 +1,7 @@
-Cadenzr
+Cadenzr 
 =======
+
+[![Build Status](https://travis-ci.org/cadenzr/cadenzr.svg?branch=master)](https://travis-ci.org/cadenzr/cadenzr)
 
 *Self-hosted web app for music streaming*
 
