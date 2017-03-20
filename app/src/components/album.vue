@@ -22,7 +22,6 @@
                         <th class="sm-hide"><a v-on:click="toggleSort('artist')">Artist</a></th>
                         <th class="md-hide"><a v-on:click="toggleSort('album')">Album</a></th>
                         <th class="md-hide"><a v-on:click="toggleSort('year')">Year</a></th>
-                        <th class="md-hide"><a v-on:click="toggleSort('played')">Plays</a></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,7 +33,6 @@
                         <td class="sm-hide">{{song.artist}}</td>
                         <td class="md-hide">{{song.album}}</td>
                         <td class="md-hide">{{song.year}}</td>
-                        <td class="md-hide">{{song.played}}</td>
                     </tr>
                 </tbody>
             </table>

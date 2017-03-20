@@ -6,8 +6,14 @@
  */
 
 .single-album {
+    
+    
 
     .album-meta {
+        
+        @media screen and (max-width: $md) {
+            padding-top: 40px;
+        }
 
         background-color: darken($black, 2);
 

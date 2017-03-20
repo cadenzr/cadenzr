@@ -20,7 +20,7 @@
                         </div>
                         <div class="album-meta">
                             <div class="album-meta-info pure-u-20-24">
-                                <h1>{{album.name}} <small>- {{album.played}} plays</small></h1>
+                                <h1>{{album.name}}</h1>
                                 <h2>{{album.getArtist()}} <span>{{album.year}}</span></h2>
                             </div>
                         </div>
