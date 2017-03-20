@@ -30,7 +30,9 @@ func (p *genericTagAudioProber) ProbeAudio(file string) (meta *AudioMeta, err er
 	meta.Genre = m.Genre()
 	meta.Track, meta.TotalTracks = m.Track()
 
-	meta.CoverBufer = m.Picture().Data
+	if m.Picture() != nil {
+		meta.CoverBufer = m.Picture().Data
+	}
 
 	d, err := mp3.Length(f)
 	if err == nil {

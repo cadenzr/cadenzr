@@ -147,6 +147,7 @@ func HasProber(mime string) bool {
 // ProbeAudioFile Probes a file and tries to fill in AudioMeta.
 // meta is not nil if there was no error.
 func ProbeAudioFile(file string) (meta *AudioMeta, err error) {
+	log.Debugln(file)
 	ext := filepath.Ext(file)
 	mime := mime.TypeByExtension(ext)
 	if len(mime) == 0 {
