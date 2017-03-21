@@ -4,7 +4,6 @@ import * as jwt_decode from 'jwt-decode';
 import Song from './Song';
 import Album from './Album';
 import Playlist from './Playlist';
-import env from './env';
 
 import * as _ from 'lodash';
 
@@ -24,12 +23,11 @@ class Api {
     }
 
     authenticate(username: string, password: string): Promise<void> {
-        console.log(env);
         let p = new Promise<void>((resolve, reject) => {
             $.ajax({
                 method: "post",
                 dataType: 'json',
-                url: env.backend + '/login',
+                url: this.apiEndpoint + 'login',
                 data: { username: username, password: password },
             })
                 .then((response) => {
@@ -55,7 +53,7 @@ class Api {
             $.ajax({
                 method: "get",
                 dataType: 'json',
-                url: this.endpoint + 'albums',
+                url: this.apiEndpoint + 'albums',
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -82,7 +80,7 @@ class Api {
             $.ajax({
                 method: "get",
                 dataType: 'json',
-                url: this.endpoint + 'albums/' + id.toString(),
+                url: this.apiEndpoint + 'albums/' + id.toString(),
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -109,7 +107,7 @@ class Api {
             $.ajax({
                 method: "get",
                 dataType: 'json',
-                url: this.endpoint + 'playlists',
+                url: this.apiEndpoint + 'playlists',
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -145,7 +143,7 @@ class Api {
             $.ajax({
                 method: "get",
                 dataType: 'json',
-                url: this.endpoint + 'playlists/' + id,
+                url: this.apiEndpoint + 'playlists/' + id,
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -183,7 +181,7 @@ class Api {
             $.ajax({
                 method: "POST",
                 dataType: 'json',
-                url: this.endpoint + 'playlists/' + playlist.id + '/songs',
+                url: this.apiEndpoint + 'playlists/' + playlist.id + '/songs',
                 data: { songs: ids },
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
@@ -211,7 +209,7 @@ class Api {
             $.ajax({
                 method: "POST",
                 dataType: 'json',
-                url: this.endpoint + 'playlists',
+                url: this.apiEndpoint + 'playlists',
                 data: { name: playlist.name, },
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
@@ -238,7 +236,7 @@ class Api {
         let p = new Promise<any>((resolve, reject) => {
             $.ajax({
                 method: "DELETE",
-                url: this.endpoint + 'playlists/' + playlist.id,
+                url: this.apiEndpoint + 'playlists/' + playlist.id,
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -265,7 +263,7 @@ class Api {
         let p = new Promise<any>((resolve, reject) => {
             $.ajax({
                 method: "DELETE",
-                url: this.endpoint + 'playlists/' + playlist.id + '/songs/' + song.id,
+                url: this.apiEndpoint + 'playlists/' + playlist.id + '/songs/' + song.id,
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -292,7 +290,7 @@ class Api {
             $.ajax({
                 method: "post",
                 dataType: 'json',
-                url: this.endpoint + 'songs/' + s.id.toString() + '/played',
+                url: this.apiEndpoint + 'songs/' + s.id.toString() + '/played',
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -318,7 +316,7 @@ class Api {
         let p = new Promise<any>((resolve, reject) => {
             $.ajax({
                 method: "post",
-                url: this.endpoint + 'scan',
+                url: this.apiEndpoint + 'scan',
                 beforeSend: (xhr) => {
                     this.setToken(xhr);
                 },
@@ -397,7 +395,7 @@ class Api {
     }
 
 
-    private endpoint: string = env.backend + '/api/';
+    private apiEndpoint: string = '/api/';
 }
 
 export { events };

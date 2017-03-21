@@ -29,7 +29,6 @@
     import PubSub from './../PubSub';
     import AudioPlayerEvents from './../AudioPlayer';
     import AudioPlayer from './../AudioPlayer';
-    import env from '@/env';
 
         interface UploadComponent extends Vue {
                     error: string;
@@ -42,7 +41,7 @@ export default {
     return {
       error: '',
       scanning: false,
-      uploadUrl: env.backend + '/api/upload',
+      uploadUrl: '/api/upload',
     }
   },
   computed: {

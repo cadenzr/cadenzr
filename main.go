@@ -436,10 +436,6 @@ func loadConfig() {
 
 	config.Hostname = strings.TrimSpace(config.Hostname)
 
-	if len(config.Hostname) == 0 {
-		config.Hostname = "127.0.0.1"
-	}
-
 	if config.Port == 0 {
 		config.Port = 8080
 	}
@@ -741,7 +737,7 @@ func main() {
 	e.Static("/images", "images")
 
 	// Login route
-	e.POST("/login", login)
+	e.POST("/api/login", login)
 
 	// Restricted group
 	r := e.Group("/api")

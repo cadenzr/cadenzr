@@ -1,5 +1,17 @@
 // see http://vuejs-templates.github.io/webpack for documentation.
+var merge = require('webpack-merge')
 var path = require('path')
+var customEnv = {
+  proxyTable: {
+      '/api': {
+          target: 'http://127.0.0.1:8080',
+          changeOrigin: true,
+      }
+  }
+};
+if(require('./custom.env')) {
+  customEnv = merge(customEnv, require('./custom.env'));
+}
 
 module.exports = {
   build: {
@@ -27,7 +39,7 @@ module.exports = {
     autoOpenBrowser: true,
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
-    proxyTable: {},
+    proxyTable: customEnv.proxyTable,
     // CSS Sourcemaps off by default because relative paths are "buggy"
     // with this option, according to the CSS-Loader README
     // (https://github.com/webpack/css-loader#sourcemaps)

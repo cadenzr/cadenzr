@@ -1,5 +1,4 @@
 import * as _ from 'lodash';
-import env from './env';
 
 class Song {
     id: number;
@@ -20,7 +19,7 @@ class Song {
     }
 
     getCoverUrl(): string {
-        return env.backend + this.cover;
+        return this.cover;
     }
 
 

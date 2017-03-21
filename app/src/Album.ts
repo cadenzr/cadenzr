@@ -1,7 +1,6 @@
 import * as _ from 'lodash';
 
 import Song from './Song';
-import env from './env';
 
 class Album {
     id: number;
@@ -45,7 +44,7 @@ class Album {
             return '';
         }
 
-        return env.backend + this.cover;
+        return this.cover;
     }
 
     private hasSongs(): boolean {
