@@ -12,7 +12,7 @@ func TestProbers(t *testing.T) {
 
 		Initialize()
 
-		meta, err := ProbeAudioFile("../media/demo/Curse the Day.mp3")
+		meta, err := ProbeAudioFile("../media/0demo/Curse the Day.mp3")
 		So(err, ShouldEqual, nil)
 
 		So(meta.Title, ShouldEqual, "Curse the Day (Radio Edit)")

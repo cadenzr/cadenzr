@@ -89,17 +89,35 @@ func TestApi(t *testing.T) {
 
 		Convey("Test get albums", func() {
 
-			_, status, err := Do("GET", endpoint+"/api/albums")
+			body, status, err := Do("GET", endpoint+"/api/albums")
 			So(err, ShouldEqual, nil)
 			So(status, ShouldEqual, 200)
+			
+			albums := []map[string]interface{}{}
+			//So(body, ShouldEqual, -1)
+			err = json.Unmarshal([]byte(body), &albums)
+			So(err, ShouldEqual, nil)
+			So(len(albums), ShouldBeGreaterThanOrEqualTo, 1)
+			So(albums[0]["name"], ShouldEqual, "Curse the Day (Single versions)")
 
 		})
 
 		Convey("Test single album", func() {
 
-			_, status, err := Do("GET", endpoint+"/api/albums/1")
+			body, status, err := Do("GET", endpoint+"/api/albums/1")
 			So(err, ShouldEqual, nil)
 			So(status, ShouldEqual, 200)
+			
+			album := map[string]interface{}{}
+			//So(body, ShouldEqual, -1)
+			err = json.Unmarshal([]byte(body), &album)
+			So(err, ShouldEqual, nil)
+			
+			So(album["id"], ShouldEqual, 1)
+			So(album["name"], ShouldEqual, "Curse the Day (Single versions)")
+			So(album["year"], ShouldEqual, 2016)
+			So(album["cover"], ShouldEqual, "/images/8806119b2782b3f3eaa32129c20533bd.jpg")
+			
 
 		})
 

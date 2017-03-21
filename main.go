@@ -534,7 +534,7 @@ type SongResponse struct {
 type AlbumResponse struct {
 	Id     int64           `db:"id" json:"id"`
 	Name   string          `db:"name" json:"name"`
-	Year   NullInt64       `db:"year" jsosn:"year"`
+	Year   NullInt64       `db:"year" json:"year"`
 	Cover  NullString      `db:"cover" json:"cover"`
 	Songs  []*SongResponse `json:"songs"`
 	Played int64           `json:"played"`
