@@ -21,6 +21,5 @@ script:
   - go build
   - go test -v ./...
   - cd app
-  - cp src/env.ts.example src/env.ts
   - npm install
   - npm run build
