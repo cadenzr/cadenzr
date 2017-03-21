@@ -9,8 +9,10 @@ var customEnv = {
       }
   }
 };
-if(require('./custom.env')) {
+try {
+  require.resolve('./custom.env');
   customEnv = merge(customEnv, require('./custom.env'));
+} catch(e) {
 }
 
 module.exports = {
