@@ -8,5 +8,6 @@ import (
 type Artist struct {
 	gorm.Model
 
-	Name string `gorm:"not null,unique_index"`
+	Name  string `gorm:"not null,unique_index"`
+	Songs []*Song
 }

@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/cadenzr/cadenzr/db"
+	"github.com/cadenzr/cadenzr/log"
 	"github.com/cadenzr/cadenzr/models"
 	"github.com/labstack/echo"
-	"github.com/cadenzr/cadenzr/log"
 )
 
 type songResponse struct {
