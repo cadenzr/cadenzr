@@ -11,6 +11,7 @@ import (
 	"github.com/cadenzr/cadenzr/db"
 	"github.com/cadenzr/cadenzr/models"
 	"github.com/cadenzr/cadenzr/probers"
+	"github.com/cadenzr/cadenzr/scan"
 
 	"github.com/cadenzr/cadenzr/log"
 
@@ -84,7 +85,7 @@ func main() {
 	handleInterrupt(stopProgram)
 
 	scanCh = make(chan (chan struct{}))
-	go scanHandler(scanCh)
+	go scan.ScanHandler(scanCh)
 
 	go startAPI()
 

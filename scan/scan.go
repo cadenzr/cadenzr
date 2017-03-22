@@ -1,4 +1,4 @@
-package main
+package scan
 
 import (
 	"crypto/md5"
@@ -16,14 +16,14 @@ import (
 	"github.com/cadenzr/cadenzr/probers"
 )
 
-var scanDone = make(chan struct{})
+var ScanDone = make(chan struct{})
 
 func isImage(mime string) bool {
 	mime = strings.ToLower(mime)
 	return strings.Contains(mime, "image")
 }
 
-func scanHandler(scanCh chan (chan struct{})) {
+func ScanHandler(scanCh chan (chan struct{})) {
 	requests := []chan struct{}{}
 	scanning := false
 	for {
@@ -32,9 +32,9 @@ func scanHandler(scanCh chan (chan struct{})) {
 			requests = append(requests, done)
 			if scanning == false {
 				scanning = true
-				go scanFilesystem("media")
+				go ScanFilesystem("media")
 			}
-		case <-scanDone:
+		case <-ScanDone:
 			for _, done := range requests {
 
 				done <- struct{}{}
@@ -45,9 +45,9 @@ func scanHandler(scanCh chan (chan struct{})) {
 	}
 }
 
-func scanFilesystem(mediaDir string) {
+func ScanFilesystem(mediaDir string) {
 	defer func() {
-		scanDone <- struct{}{}
+		ScanDone <- struct{}{}
 	}()
 
 	newFiles := 0

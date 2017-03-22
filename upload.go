@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/cadenzr/cadenzr/log"
+	"github.com/cadenzr/cadenzr/scan"
 	"github.com/labstack/echo"
 )
 
@@ -44,7 +45,7 @@ func upload(c echo.Context) error {
 	}
 
 	// TODO: Should be done by the channel.
-	scanFilesystem("media/uploads/" + file.Filename)
+	scan.ScanFilesystem("media/uploads/" + file.Filename)
 
 	return c.NoContent(http.StatusOK)
 }
