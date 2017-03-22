@@ -89,8 +89,8 @@
                 loadAlbums: function(){
                     let self = this
                     Api.getAlbums()
-                    .then(albums => {
-                        self.albums = _.map(albums, (album : any) => {
+                    .then(response => {
+                        self.albums = _.map(response.data, (album : any) => {
                             album.songs = _.map(album.songs, (song) => {
                                 return new Song(song);
                             });
@@ -99,6 +99,8 @@
 
                             return new Album(album);
                         });
+
+                        
 
                         self.show = true;
                     });

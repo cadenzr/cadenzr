@@ -83,10 +83,7 @@ func main() {
 	scanCh := make(chan (chan struct{}))
 	go scanHandler(scanCh)
 
-	doneCh := make(chan struct{})
-
-	scanCh <- doneCh
-	<-doneCh
+	go startAPI()
 
 	<-stopProgram
 	log.Info("Stopping cadenzr...")

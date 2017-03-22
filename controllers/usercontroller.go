@@ -25,8 +25,7 @@ func isAuthenticated(ctx echo.Context) bool {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 
-		// Also used in authcontroller. Should be refactored somewhere else.
-		return []byte("secret"), nil
+		return Secret, nil
 	})
 
 	if err != nil {

@@ -1,10 +1,15 @@
 // see http://vuejs-templates.github.io/webpack for documentation.
 var merge = require('webpack-merge')
 var path = require('path')
+var target = 'http://127.0.0.1:8080';
 var customEnv = {
   proxyTable: {
       '/api': {
-          target: 'http://127.0.0.1:8080',
+          target: target,
+          changeOrigin: true,
+      },
+      '/images': {
+          target: target,
           changeOrigin: true,
       }
   }

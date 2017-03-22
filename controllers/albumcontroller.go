@@ -10,6 +10,107 @@ import (
 	"github.com/trtstm/budgetr/log"
 )
 
+type songResponse struct {
+	ID       uint               `json:"id"`
+	Name     string             `json:"name"`
+	Artist   models.NullString  `json:"artist"`
+	Album    models.NullString  `json:"album"`
+	Year     models.NullInt64   `json:"year"`
+	Genre    models.NullString  `json:"genre"`
+	Duration models.NullFloat64 `json:"duration"`
+	Mime     string             `json:"mime"`
+	Cover    models.NullString  `json:"cover"`
+	Played   uint               `json:"played"`
+}
+
+type imageResponse struct {
+	ID   uint   `json:"id"`
+	Path string `json:"path"`
+	Link string `json:"link"`
+	Mime string `json:"mime"`
+	Hash string `json:"hash"`
+}
+type albumResponse struct {
+	ID    uint              `json:"id"`
+	Name  string            `json:"name"`
+	Year  models.NullInt64  `json:"year"`
+	Cover models.NullString `json:"cover"`
+	Songs []*songResponse   `json:"songs"`
+}
+
+func TransformImage(image *models.Image) *imageResponse {
+	return &imageResponse{
+		ID:   image.ID,
+		Path: image.Path,
+		Link: image.Link,
+		Mime: image.Mime,
+		Hash: image.Hash,
+	}
+}
+
+func TransformAlbum(album *models.Album) *albumResponse {
+	r := &albumResponse{}
+	r.ID = album.ID
+	r.Name = album.Name
+	r.Year = album.Year
+
+	if album.Cover != nil {
+		r.Cover.Set(album.Cover.Link)
+	}
+
+	if album.Songs != nil {
+		r.Songs = TransformSongs(album.Songs...)
+	}
+
+	return r
+}
+
+func TransformAlbums(albums ...*models.Album) []*albumResponse {
+	r := []*albumResponse{}
+
+	for _, album := range albums {
+		r = append(r, TransformAlbum(album))
+	}
+
+	return r
+}
+
+func TransFormSong(song *models.Song) *songResponse {
+	r := &songResponse{}
+	r.ID = song.ID
+	r.Name = song.Name
+	r.Year = song.Year
+	r.Genre = song.Genre
+	r.Duration = song.Duration
+	r.Mime = song.Mime
+	r.Played = song.Played
+
+	if song.Artist != nil {
+		r.Artist.Set(song.Artist.Name)
+	}
+
+	if song.Album != nil {
+		r.Album.Set(song.Album.Name)
+	}
+
+	if song.Cover != nil {
+		r.Cover.Set(song.Cover.Link)
+	}
+
+	return r
+}
+
+func TransformSongs(songs ...*models.Song) []*songResponse {
+	r := []*songResponse{}
+
+	for _, song := range songs {
+		r = append(r, TransFormSong(song))
+	}
+
+	return r
+}
+
+// StrToUint does what the name implies.
 func StrToUint(s string) uint {
 	v, _ := strconv.ParseUint(s, 10, 64)
 	return uint(v)
@@ -19,22 +120,22 @@ type albumController struct {
 }
 
 func (c *albumController) Index(ctx echo.Context) error {
-	albums := []models.Album{}
-	if gormDB := db.DB.Find(&albums); gormDB.Error != nil {
+	albums := []*models.Album{}
+	if gormDB := db.DB.Preload("Songs").Preload("Cover").Preload("Songs.Album").Preload("Songs.Artist").Preload("Songs.Cover").Find(&albums); gormDB.Error != nil {
 		log.Errorf("AlbumController::Index Database failed: %v", gormDB.Error)
 		return ctx.NoContent(http.StatusInternalServerError)
 	}
 
 	return ctx.JSON(http.StatusOK, echo.Map{
-		"data": albums,
+		"data": TransformAlbums(albums...),
 	})
 }
 
 func (c *albumController) Show(ctx echo.Context) error {
-	id := StrToUint(ctx.QueryParam("id"))
+	id := StrToUint(ctx.Param("id"))
 
-	album := models.Album{}
-	gormDB := db.DB.First(&album, "id = ?", id)
+	album := &models.Album{}
+	gormDB := db.DB.Preload("Songs").Preload("Cover").Preload("Songs.Album").Preload("Songs.Artist").Preload("Songs.Cover").First(&album, "id = ?", id)
 	if gormDB.RecordNotFound() {
 		log.Debugf("AlbumController::Show Album '%d' not found.", id)
 		return ctx.NoContent(http.StatusNotFound)
@@ -43,7 +144,7 @@ func (c *albumController) Show(ctx echo.Context) error {
 		return ctx.NoContent(http.StatusInternalServerError)
 	}
 
-	return ctx.JSON(http.StatusOK, album)
+	return ctx.JSON(http.StatusOK, TransformAlbum(album))
 }
 
 // AlbumController Contains the actions for the 'albums' endpoint.

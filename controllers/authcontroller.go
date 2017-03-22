@@ -14,19 +14,23 @@ import (
 	"github.com/labstack/echo"
 )
 
-type userLoginClaim struct {
+// UserLoginClaim is the claim that will be used for jwt.
+type UserLoginClaim struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
+
+// Secret used for signing tokens.
+var Secret = []byte("secret")
 
 type authController struct {
 }
 
 func (c *authController) Login(ctx echo.Context) error {
 	params := &struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Username string `json:"username" form:"username"`
+		Password string `json:"password" form:"password"`
 	}{}
 
 	if err := ctx.Bind(params); err != nil {
@@ -59,7 +63,7 @@ func (c *authController) Login(ctx echo.Context) error {
 		})
 	}
 
-	claims := &userLoginClaim{
+	claims := &UserLoginClaim{
 		ID:       user.ID,
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
@@ -72,7 +76,7 @@ func (c *authController) Login(ctx echo.Context) error {
 
 	// TODO: Get key from config.
 	// And this is also used in usercontroller. Should be places somewhere else...
-	signedToken, err := unsignedToken.SignedString([]byte("secret"))
+	signedToken, err := unsignedToken.SignedString(Secret)
 	if err != nil {
 		log.Errorf("AuthController::Login Could not sign jwt token: %v", err)
 		return ctx.NoContent(http.StatusInternalServerError)

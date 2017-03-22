@@ -14,4 +14,6 @@ type Album struct {
 	CoverID NullInt64
 
 	Year NullInt64
+
+	Songs []*Song `gorm:"ForeignKey:AlbumID"`
 }
