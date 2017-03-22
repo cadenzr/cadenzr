@@ -27,9 +27,10 @@ func handleInterrupt(stopProgram chan struct{}) {
 }
 
 var scanCh chan (chan struct{})
+var configFile string = "./config.json"
 
 func main() {
-	if conf, err := config.NewConfigFromFile("./config.json"); err != nil {
+	if conf, err := config.NewConfigFromFile(configFile); err != nil {
 		log.Fatalf("Failed read configuration file: %v", err)
 	} else {
 		config.Config = conf
