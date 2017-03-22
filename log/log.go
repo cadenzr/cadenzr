@@ -97,6 +97,14 @@ func SetLevel(level Level) {
 	logger.Level = (logrus.Level(level))
 }
 
+func Fatal(args ...interface{}) {
+	logger.Fatal(args...)
+}
+
+func Fatalf(format string, args ...interface{}) {
+	logger.Fatalf(format, args...)
+}
+
 func Fatalln(format string) {
 	logger.Fatalln(format)
 }
