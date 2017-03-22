@@ -245,7 +245,7 @@ export default {
 
         Api.getPlaylists()
         .then((playlists) => {
-            self.playlists = playlists;
+            self.playlists = playlists.data;
         });
   },
   beforeDestroy: function () {

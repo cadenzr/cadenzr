@@ -113,7 +113,7 @@ class Api {
                 },
             })
                 .then((response) => {
-                    response = _.map(response, (playlist: any) => {
+                    response.data = _.map(response.data, (playlist: any) => {
                         playlist.songs = _.map(playlist.songs, (song) => {
                             return new Song(song);
                         });

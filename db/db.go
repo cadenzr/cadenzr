@@ -54,6 +54,7 @@ func SetupSchema() (err error) {
 		&models.Image{},
 		&models.Album{},
 		&models.Song{},
+		&models.Playlist{},
 	)
 	if db.Error != nil {
 		log.Errorf("Failed to update database schema: %v", err)

@@ -33,6 +33,14 @@ func startAPI() {
 
 	r.GET("/albums", controllers.AlbumController.Index)
 	r.GET("/albums/:id", controllers.AlbumController.Show)
+	r.GET("/playlists", controllers.PlaylistController.Index)
+	r.POST("/playlists", controllers.PlaylistController.Create)
+	r.DELETE("/playlists/:id/songs/:sid", controllers.PlaylistController.DeleteSong)
+	r.POST("/playlists/:id/songs", controllers.PlaylistController.AddSongs)
+	r.GET("/playlists/:id", controllers.PlaylistController.Show)
+	r.DELETE("/playlists/:id", controllers.PlaylistController.Delete)
+
+	r.POST("/upload", upload)
 
 	e.GET("/api/songs/:id/stream", func(c echo.Context) error {
 		id := controllers.StrToUint(c.Param("id"))

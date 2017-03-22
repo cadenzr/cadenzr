@@ -43,6 +43,7 @@ func upload(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	// TODO: Should be done by the channel.
 	scanFilesystem("media/uploads/" + file.Filename)
 
 	return c.NoContent(http.StatusOK)
