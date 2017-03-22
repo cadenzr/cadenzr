@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strings"
-
-	"github.com/cadenzr/cadenzr/log"
 )
 
 // Environment types.
@@ -49,20 +47,17 @@ var Config = &Configuration{}
 func NewConfigFromFile(file string) (config *Configuration, err error) {
 	raw, err := ioutil.ReadFile(file)
 	if err != nil {
-		log.Errorf("Could not load %s: %v", file, err)
 		return
 	}
 
 	config = &Configuration{}
 	err = json.Unmarshal(raw, config)
 	if err != nil {
-		log.Errorf("Could not parse %s: %v.", file, err)
 		return
 	}
 
 	err = cleanUp(config)
 	if err != nil {
-		log.Errorf("There is an error in the configuration file %s: %v.", file, err)
 		return
 	}
 

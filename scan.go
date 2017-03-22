@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/md5"
-	"database/sql"
 	"encoding/hex"
 	"io/ioutil"
 	"mime"
@@ -11,7 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cadenzr/cadenzr/db"
 	"github.com/cadenzr/cadenzr/log"
+	"github.com/cadenzr/cadenzr/models"
 	"github.com/cadenzr/cadenzr/probers"
 )
 
@@ -70,16 +71,15 @@ func scanFilesystem(mediaDir string) {
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
 
 		// First check if file with same path exists.
-		query := `SELECT "id" FROM "songs" WHERE "path" = ?`
-		var exists int64
-		err = db.QueryRow(query, path).Scan(&exists)
-		switch {
-		case err == sql.ErrNoRows:
-		case err != nil:
-			log.WithFields(log.Fields{"reason": err.Error(), "path": path}).Error("Failed to check if path exists in database.")
+		var exists uint
+		gormDB := db.DB.Table("songs").Where("path = ?", path).Count(&exists)
+		if gormDB.Error != nil {
+			log.Errorf("scanFilesystem Could not check if path exists. Database failed %v.", gormDB.Error)
 			return nil
-		default:
-			log.WithFields(log.Fields{"path": path}).Info("Skipping file. Already in database.")
+		}
+
+		if exists != 0 {
+			log.Debugf("Skipping file. Path already in database: %s.", path)
 			return nil
 		}
 
@@ -89,22 +89,41 @@ func scanFilesystem(mediaDir string) {
 			return nil
 		}
 
-		var cover *Image
+		var cover *models.Image
 		if meta.CoverBufer != nil {
 			mimeCover := http.DetectContentType(meta.CoverBufer)
 			if isImage(mimeCover) {
 				md5Sum := md5.Sum(meta.CoverBufer)
 				hash := hex.EncodeToString(md5Sum[:])
+
 				extensions, _ := mime.ExtensionsByType(mimeCover)
 				if extensions != nil && len(extensions) > 0 {
 					destination := "images/" + hash + extensions[0]
+					cover = &models.Image{
+						Path: destination,
+						Link: "/" + destination,
+						Mime: mimeCover,
+						Hash: hash,
+					}
+
 					if err = ioutil.WriteFile(destination, meta.CoverBufer, 0666); err == nil {
-						cover = &Image{
+						cover = &models.Image{
 							Path: destination,
 							Link: "/" + destination,
 							Mime: mimeCover,
 							Hash: hash,
 						}
+
+						gormDB := db.DB.Table("images").Where("hash = ?", cover.Hash).First(cover)
+						if gormDB.RecordNotFound() {
+							gormDB = db.DB.Create(cover)
+						}
+
+						if gormDB.Error != nil {
+							log.WithFields(log.Fields{"reason": err.Error(), "file": cover.Path}).Error("Could not get or insert image.")
+							cover = nil
+						}
+
 					} else {
 						log.WithFields(log.Fields{"reason": err.Error(), "destination": destination}).Error("Failed to write cover to disk.")
 					}
@@ -112,78 +131,71 @@ func scanFilesystem(mediaDir string) {
 			}
 		}
 
-		// TODO mime type is also calculated in ProbeAudioFile. Use that one?
-		s := NewSong()
-		s.Name = meta.Title
-		if len(s.Name) == 0 {
+		song := &models.Song{}
+		song.Name = meta.Title
+		if len(song.Name) == 0 {
 			log.WithFields(log.Fields{"file": path}).Error("Could not get name of song.")
 			return nil
 		}
-		s.Mime = mimeType
-		s.Path = path
+		song.Mime = mimeType
+		song.Path = path
 		if cover != nil {
-			s.SetCover(cover)
-			insertIfNotExists("images", s.Cover, map[string]interface{}{"hash": s.Cover.Hash})
+			song.Cover = cover
 		}
 		if len(meta.Genre) > 0 {
-			s.Genre.Set(meta.Genre)
+			song.Genre.Set(meta.Genre)
 		} else {
 			log.WithFields(log.Fields{"file": path}).Debug("No genre found.")
 		}
 		if meta.Year != 0 {
-			s.Year.Set(int64(meta.Year))
+			song.Year.Set(int64(meta.Year))
 		} else {
 			log.WithFields(log.Fields{"file": path}).Debug("No year found.")
 		}
 		if len(meta.Album) > 0 {
-			s.SetAlbum(&Album{
+			album := &models.Album{
 				Name: meta.Album,
-				Year: s.Year,
-			})
-
-			s.Album.SetCover(s.Cover)
-
-			if err = insertIfNotExists("albums", s.Album, map[string]interface{}{"name": s.Album.Name}); err != nil {
-				log.WithFields(log.Fields{"reason": err.Error(), "album": s.Album.Name}).Error("Failed to insert album.")
+				Year: song.Year,
 			}
+			if cover != nil {
+				album.Cover = cover
+			}
+			if gormDB := db.DB.FirstOrCreate(album, "name = ?", album.Name); gormDB.Error != nil {
+				log.Errorf("Could not create/get album '%s': %v", album.Name, gormDB.Error)
+				return nil
+			}
+
+			song.Album = album
 		} else {
 			log.WithFields(log.Fields{"file": path}).Debug("No album found.")
 		}
 		if len(meta.Artist) > 0 {
-			s.SetArtist(&Artist{
+			artist := &models.Artist{
 				Name: meta.Artist,
-			})
-
-			if err = insertIfNotExists("artists", s.Artist, map[string]interface{}{"name": s.Artist.Name}); err != nil {
-				log.WithFields(log.Fields{"reason": err.Error(), "artist": s.Artist.Name}).Error("Failed to insert artist.")
 			}
+
+			if gormDB := db.DB.FirstOrCreate(artist, "name = ?", artist.Name); gormDB.Error != nil {
+				log.Errorf("Could not create/get artist '%s': %v", artist.Name, gormDB.Error)
+				return nil
+			}
+
+			song.Artist = artist
 		} else {
 			log.WithFields(log.Fields{"file": path}).Debug("No Artist found.")
 		}
 
 		if meta.Duration != 0 {
-			s.Duration.Set(meta.Duration)
+			song.Duration.Set(meta.Duration)
 		} else {
 			log.WithFields(log.Fields{"file": path}).Debug("No duration found.")
 		}
 
-		ok, err := find("songs", &Song{}, map[string]interface{}{"name": s.Name, "album_id": s.AlbumId})
-		if err != nil {
-			log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name}).Error("Failed to check if song already exists.")
-		} else if !ok {
-			if err := insert("songs", s); err != nil {
-				log.WithFields(log.Fields{"reason": err.Error(), "song": s.Name}).Error("Failed to insert song.")
-			} else {
-				newFiles++
-			}
-		} else {
-			albumName := ""
-			if s.Album != nil {
-				albumName = s.Album.Name
-			}
-			log.WithFields(log.Fields{"song": s.Name, "album": albumName}).Info("Song already in database.")
+		if gormDB := db.DB.Create(song); gormDB.Error != nil {
+			log.Errorf("Could not create song '%s': %v", song.Name, gormDB.Error)
+			return nil
 		}
 
+		newFiles++
 		return nil
 	})
 

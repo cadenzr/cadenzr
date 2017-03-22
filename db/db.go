@@ -35,6 +35,9 @@ func SetupConnection(dialect Dialect, args ...interface{}) (err error) {
 
 // Shutdown closes the database connection.
 func Shutdown() (err error) {
+	if DB == nil {
+		return nil
+	}
 	err = DB.Close()
 	DB = nil
 
@@ -48,6 +51,9 @@ func SetupSchema() (err error) {
 	db := DB.AutoMigrate(
 		&models.Artist{},
 		&models.User{},
+		&models.Image{},
+		&models.Album{},
+		&models.Song{},
 	)
 	if db.Error != nil {
 		log.Errorf("Failed to update database schema: %v", err)

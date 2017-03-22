@@ -9,5 +9,5 @@ type User struct {
 	gorm.Model
 
 	Username string `gorm:"unique_index"`
-	Password string
+	Password string `gorm:"not null"`
 }
