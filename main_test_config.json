@@ -1,0 +1,8 @@
+{
+  "hostname": "",
+  "port": 8080,
+  "database": "file::memory:?mode=memory&cache=shared",
+  "log_level": "info",
+  "username": "admin",
+  "password": "test"
+}
