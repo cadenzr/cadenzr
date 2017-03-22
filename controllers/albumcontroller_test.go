@@ -55,13 +55,57 @@ func TestAlbumControllerIndex(t *testing.T) {
 			So(rec.Code, ShouldEqual, http.StatusOK)
 
 			response := &struct {
-				Data []models.Album
+				Data []*albumResponse
 			}{
-				Data: []models.Album{},
+				Data: []*albumResponse{},
 			}
 
 			json.NewDecoder(rec.Result().Body).Decode(response)
 			So(len(response.Data), ShouldEqual, 0)
+		})
+
+		year1 := models.NullInt64{}
+		year1.Set(1234)
+		year2 := models.NullInt64{}
+		year2.Set(1235)
+		albums := []*models.Album{
+			&models.Album{
+				Name: "album1",
+				Year: year1,
+			},
+			&models.Album{
+				Name: "album2",
+				Year: year2,
+			},
+		}
+
+		for _, album := range albums {
+			db.DB.Create(album)
+		}
+
+		Convey("Test returned albums are correct.", t, func() {
+			req := httptest.NewRequest("get", "/api/albums", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			req.Header.Set("Authorization", "Bearer "+token)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			So(AlbumController.Index(c), ShouldBeNil)
+			So(rec.Code, ShouldEqual, http.StatusOK)
+
+			response := &struct {
+				Data []*albumResponse
+			}{
+				Data: []*albumResponse{},
+			}
+
+			json.NewDecoder(rec.Result().Body).Decode(response)
+			So(len(response.Data), ShouldEqual, len(albums))
+
+			for i, album := range response.Data {
+				So(albums[i].Name, ShouldEqual, album.Name)
+				So(albums[i].Year.Int64, ShouldEqual, album.Year.Int64)
+			}
 		})
 	})
 }
