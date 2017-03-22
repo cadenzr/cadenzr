@@ -1,12 +1,15 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/cadenzr/cadenzr/config"
 	"github.com/cadenzr/cadenzr/db"
+	"github.com/cadenzr/cadenzr/models"
 	"github.com/cadenzr/cadenzr/probers"
 
 	"github.com/cadenzr/cadenzr/log"
@@ -51,6 +54,25 @@ func main() {
 
 	if err := db.SetupSchema(); err != nil {
 		log.Fatalf("Failed to initialize database schema: %v", err)
+	}
+
+	// Create admin user.
+	shaSum := sha256.Sum256([]byte(config.Config.Password))
+	hash := hex.EncodeToString(shaSum[:])
+	user := &models.User{
+		Username: config.Config.Username,
+		Password: hash,
+	}
+	gormDB := db.DB.FirstOrCreate(user).Where("username = ?", user.Username)
+	if gormDB.Error != nil {
+		log.Fatalf("Failed to check if user already in database: %v", gormDB.Error)
+	}
+	if user.Password != hash {
+		user.Password = hash
+		gormDB = db.DB.Table("users").Where("username = ?", user.Username).UpdateColumn("password", user.Password)
+		if gormDB.Error != nil {
+			log.Fatalf("Failed to update user '%s' password.: %v", user.Username, gormDB.Error)
+		}
 	}
 
 	probers.Initialize()
