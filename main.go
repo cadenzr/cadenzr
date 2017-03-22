@@ -26,6 +26,8 @@ func handleInterrupt(stopProgram chan struct{}) {
 	}()
 }
 
+var scanCh chan (chan struct{})
+
 func main() {
 	if conf, err := config.NewConfigFromFile("./config.json"); err != nil {
 		log.Fatalf("Failed read configuration file: %v", err)
@@ -80,7 +82,7 @@ func main() {
 	stopProgram := make(chan struct{})
 	handleInterrupt(stopProgram)
 
-	scanCh := make(chan (chan struct{}))
+	scanCh = make(chan (chan struct{}))
 	go scanHandler(scanCh)
 
 	go startAPI()
