@@ -40,7 +40,8 @@ func TestAlbumControllerIndex(t *testing.T) {
 				Token string `json:"token"`
 			}{}
 
-			json.NewDecoder(rec.Result().Body).Decode(response)
+			err := json.NewDecoder(rec.Result().Body).Decode(response)
+			So(err, ShouldEqual, nil)
 			token = response.Token
 		})
 
@@ -60,7 +61,8 @@ func TestAlbumControllerIndex(t *testing.T) {
 				Data: []*albumResponse{},
 			}
 
-			json.NewDecoder(rec.Result().Body).Decode(response)
+			err := json.NewDecoder(rec.Result().Body).Decode(response)
+			So(err, ShouldEqual, nil)
 			So(len(response.Data), ShouldEqual, 0)
 		})
 
@@ -99,7 +101,8 @@ func TestAlbumControllerIndex(t *testing.T) {
 				Data: []*albumResponse{},
 			}
 
-			json.NewDecoder(rec.Result().Body).Decode(response)
+			err := json.NewDecoder(rec.Result().Body).Decode(response)
+			So(err, ShouldEqual, nil)
 			So(len(response.Data), ShouldEqual, len(albums))
 
 			for i, album := range response.Data {
@@ -136,7 +139,8 @@ func TestAlbumControllerShow(t *testing.T) {
 				Token string `json:"token"`
 			}{}
 
-			json.NewDecoder(rec.Result().Body).Decode(response)
+			err := json.NewDecoder(rec.Result().Body).Decode(response)
+			So(err, ShouldEqual, nil)
 			token = response.Token
 		})
 

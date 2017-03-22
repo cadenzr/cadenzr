@@ -87,7 +87,8 @@ func TestUserControllerCreateUser(t *testing.T) {
 				Token string `json:"token"`
 			}{}
 
-			json.NewDecoder(rec.Result().Body).Decode(response)
+			err := json.NewDecoder(rec.Result().Body).Decode(response)
+			So(err, ShouldEqual, nil)
 
 			body, _ = json.Marshal(echo.Map{
 				"username": "admin2",

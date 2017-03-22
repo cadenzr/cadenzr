@@ -47,7 +47,8 @@ func TestAuthControllerLogin(t *testing.T) {
 				Token string `json:"token"`
 			}{}
 
-			json.NewDecoder(rec.Result().Body).Decode(response)
+			err := json.NewDecoder(rec.Result().Body).Decode(response)
+			So(err, ShouldEqual, nil)
 			So(response.Token, ShouldNotEqual, "")
 		})
 
