@@ -1,7 +1,7 @@
 <template>
     <div ref="progressBarContainer" class="progress-bar-container">
-        <div ref="progressBar" class="progress-bar">
-        </div>
+        <div class="progress-bar-padding"></div>
+        <div ref="progressBar" class="progress-bar"></div>
 
         <div ref="progressBarHover" class="progress-bar-hover"></div>
         <div ref="progressBarPlayed" class="progress-bar-played"></div>
@@ -149,6 +149,13 @@ $progress-bar-scrubber-size: 15px;
     cursor: pointer;
     outline:none;
 
+    .progress-bar-padding {
+        width: 100%;
+        height: 100%;
+        padding-top: 16px;
+        position: absolute;
+    }
+
     .progress-bar-scrubber {
         opacity: 0;
         width: $progress-bar-scrubber-size;
@@ -169,6 +176,7 @@ $progress-bar-scrubber-size: 15px;
         background-color: $progress-bar-color;
         width: 100%;
         z-index: 997;
+        transition: transform 0.2s;
     }
 
     .progress-bar-hover {
@@ -177,6 +185,8 @@ $progress-bar-scrubber-size: 15px;
         width: 0px;
         background-color: $progress-bar-hover-color;
         z-index: 998;
+        transition: transform 0.2s;
+
     }
 
     .progress-bar-played {
@@ -185,11 +195,14 @@ $progress-bar-scrubber-size: 15px;
         width: 0px;
         background-color: $progress-bar-played-color;
         z-index: 999;
+        transition: transform 0.2s;
+
     }
 }
 
 
 .progress-bar-container:hover {
+
 
     .progress-bar, .progress-bar-hover, .progress-bar-played {
         transform: scaleY(2);
