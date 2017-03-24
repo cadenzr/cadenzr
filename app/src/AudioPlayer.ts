@@ -57,6 +57,13 @@ class AudioPlayer {
     }
 
     /**
+     * Get at what time of the current song we are.
+     */
+    currentSongTime(): number | null {
+        return this.audioEl.currentTime;
+    }
+
+    /**
      * Get the current playing song.
      */
     currentSong(): Song | null {

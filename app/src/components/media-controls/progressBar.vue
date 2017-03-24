@@ -37,17 +37,32 @@
 
                 let rect = (<any>this).$refs.progressBar.getBoundingClientRect();
                 this.width = rect.width;
+                let scrubberX = 0;
 
-                this.$on('progress-bar-start', (s) => {
-                    scrubberEl.style.transition = 'transform ' + s.duration + 's';
-                    scrubberEl.style.transform = 'translate(' + rect.width + 'px)';
+                this.$on('progress-bar-start', (t) => {
+                    scrubberEl.style.transition = 'transform ' + t + 's';
+                    scrubberEl.style.transitionTimingFunction = 'linear';
+                    setScrubberPosition(rect.width);
 
-                    progressBarPlayedEl.style.transition = 'width ' + s.duration + 's';
+                    progressBarPlayedEl.style.transition = 'width ' + t + 's';
+                    progressBarPlayedEl.style.transitionTimingFunction = 'linear';
                     progressBarPlayedEl.style.width = rect.width + 'px';
                 });
 
+                this.$on('progress-bar-stop', (v) => {
+                    console.log(v);
+                    scrubberEl.style.transition = '';
+                    setScrubberPosition(0);
+                    progressBarPlayedEl.style.transition = '';
+                    progressBarPlayedEl.style.width = v * rect.width + 'px';
+
+                });
+
                 let setScrubberPosition = (x) => {
-                    scrubberEl.style.transform = 'translate(' + (x - scrubberSize/2).toString() + 'px)';
+                    console.log('moving to ' + x);
+                    scrubberX = (x - scrubberSize/2);
+                    scrubberEl.style.transform = 'translate(' + scrubberX.toString() + 'px)';
+
                 };
 
                 let setProgressHoverWidth = (x) => {
@@ -74,8 +89,11 @@
 
                 let scrubberReleased = (e) => {
                     window.removeEventListener('mousemove', scrubberMove);
+                    window.removeEventListener('mouseup', scrubberReleased);
                     window.removeEventListener('touchmove', scrubberMove);
-                    // TODO remove ourself?
+                    window.removeEventListener('touchend', scrubberReleased);
+
+                    self.$parent.$emit('progress-change', scrubberX/rect.width);
                 };
 
                 let scrubberStartMove = (e) => {
@@ -102,8 +120,12 @@
 
 
 
-                (<any>this).$refs.progressBarContainer.addEventListener('mousedown', (e) => {
+                (<any>this).$refs.progressBarContainer.addEventListener('mousedown', (e) => {                    
                     let scrubberX = mousePositionToScrubber(getMousePosition(e));
+
+                    scrubberEl.style.transition = '';
+                    progressBarPlayedEl.style.transition = '';
+
                     setScrubberPosition(scrubberX);
                     setProgressPlayedWidth(scrubberX);
                     scrubberStartMove(e);
@@ -166,6 +188,7 @@ $progress-bar-scrubber-size: 15px;
         border-radius: 50%;
         background-color: red;
         position: absolute;
+        transform: translate(-$progress-bar-scrubber-size/2);
         bottom: 0px + $progress-bar-active-height/2 - $progress-bar-scrubber-size/2;
         z-index: 1000;   
     }

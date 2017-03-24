@@ -89,27 +89,33 @@
                 (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.SongChanged, (song:Song) => {
                     self.currentSong = song;
                     self.duration = song.duration;
+
                     self.$forceUpdate();
                 }));
 
                 (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.TimeChanged, (time:number) => {
-                    if(isSeeking) {
-                        // Just return so the slider does not jump back.
-                        return;
-                    }
-
                     //self.played = time / (<any>AudioPlayer).currentSong().duration;
-                    self.currentTime = time;
-                    self.$refs.timeSlider.value = self.currentTime;          
+                    self.currentTime = time;       
                 }));
 
+                this.$on('progress-change', (p) => {
+                    AudioPlayer.seekFromPercentage(p);
+                    AudioPlayer.play();
+                    let timeLeft = (<any>AudioPlayer).currentSong().duration - (<any>AudioPlayer).currentSongTime();
+                    self.$refs.timeSlider.$emit('progress-bar-start', timeLeft);
+                });
+
                 (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.Pause, () => {
+                    let timePlayed = (<any>AudioPlayer).currentSongTime();
+                    let duration = (<any>AudioPlayer).currentSong().duration;
+                    self.$refs.timeSlider.$emit('progress-bar-stop', timePlayed/duration);
                     self.playing = false;
                     self.$forceUpdate(); 
                 }));
 
                 (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.Play, () => {
-                    self.$refs.timeSlider.$emit('progress-bar-start', AudioPlayer.currentSong());
+                    let timeLeft = (<any>AudioPlayer).currentSong().duration - (<any>AudioPlayer).currentSongTime();
+                    self.$refs.timeSlider.$emit('progress-bar-start', timeLeft);
                     self.playing = true;
                     self.$forceUpdate(); 
                 }));
