@@ -150,10 +150,13 @@ $progress-bar-scrubber-size: 15px;
     outline:none;
 
     .progress-bar-padding {
+        $padding: 16px;
         width: 100%;
         height: 100%;
-        padding-top: 16px;
+        padding-top: 2*$padding;
         position: absolute;
+        bottom: -$padding;
+        z-index: 1001;
     }
 
     .progress-bar-scrubber {

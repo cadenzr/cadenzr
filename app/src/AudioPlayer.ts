@@ -187,11 +187,10 @@ class AudioPlayer {
 
     /**
      * 
-     * @param s Seek to a percentage of the audio. Between 0-100;
+     * @param s Seek to a percentage of the audio. Between [0,1];
      */
     seekFromPercentage(s: number) {
-        s = Math.min(Math.max(0, s), 100);
-        s = s / 100;
+        s = Math.min(Math.max(0, s), 1);
 
         this.seek(this.audioEl.duration * s);
     }
