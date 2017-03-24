@@ -22,12 +22,7 @@
                 </a>
             </div>
             <div class="pure-u-1 pure-u-md-16-24 current-song">
-                <input ref="timeSlider"
-                       class="time-slider"
-                       type="range"
-                       style="width: 100%; display: block;"
-                       min="0"
-                       v-bind:max="duration">
+                <progress-bar v-bind:played="played" ref="timeSlider"></progress-bar>
                 <img v-if="currentSong"
                      class="cover"
                      :src="currentSong.getCoverUrl()"></img>
@@ -58,6 +53,8 @@
     import {events as AudioPlayerEvents} from './../AudioPlayer';
     import AudioPlayer from './../AudioPlayer';
     import Vue from 'vue';
+    import * as progressBar from './media-controls/progressBar.vue';
+
 
     interface AudioPlayerComponent extends Vue {
                     playing: boolean;
@@ -66,10 +63,14 @@
                     duration: number;
                     currentSong: Song|null;
                     subscriptions: Array<any>;
+                    played: number;
     }
 
     export default {
         name: 'audio-player',
+        components: {
+            progressBar,
+        },
             data: function () {
                 return {
                     playing: false,
@@ -78,6 +79,7 @@
                     duration: 0,
                     currentSong: null,
                     subscriptions: [],
+                    played: 0,
                 }
             },
             mounted: function () {
@@ -96,6 +98,7 @@
                         return;
                     }
 
+                    //self.played = time / (<any>AudioPlayer).currentSong().duration;
                     self.currentTime = time;
                     self.$refs.timeSlider.value = self.currentTime;          
                 }));
@@ -106,6 +109,7 @@
                 }));
 
                 (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.Play, () => {
+                    self.$refs.timeSlider.$emit('progress-bar-start', AudioPlayer.currentSong());
                     self.playing = true;
                     self.$forceUpdate(); 
                 }));
@@ -119,14 +123,14 @@
                     AudioPlayer.setVolume(self.volume);
                 });
 
-                (<any>self).$refs.timeSlider.addEventListener('input', () => {
+                /*(<any>self).$refs.timeSlider.addEventListener('input', () => {
                     isSeeking = true;
-                });
+                });*/
 
-                (<any>self).$refs.timeSlider.addEventListener('change', () => {
+                /*(<any>self).$refs.timeSlider.addEventListener('change', () => {
                     isSeeking = false;
                     AudioPlayer.seek((<any>self).$refs.timeSlider.value);
-                });
+                });*/
 
             },
             beforeDestroy () {
