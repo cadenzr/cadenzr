@@ -89,7 +89,7 @@
                 (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.SongChanged, (song:Song) => {
                     self.currentSong = song;
                     self.duration = song.duration;
-
+                    self.$refs.timeSlider.$emit('progress-bar-stop', (<any>AudioPlayer).currentSongTime())/song.duration;
                     self.$forceUpdate();
                 }));
 

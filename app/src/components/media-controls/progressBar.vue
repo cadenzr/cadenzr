@@ -40,26 +40,26 @@
                 let scrubberX = 0;
 
                 this.$on('progress-bar-start', (t) => {
+                    console.log('start: ' + t);
                     scrubberEl.style.transition = 'transform ' + t + 's';
                     scrubberEl.style.transitionTimingFunction = 'linear';
                     setScrubberPosition(rect.width);
 
                     progressBarPlayedEl.style.transition = 'width ' + t + 's';
                     progressBarPlayedEl.style.transitionTimingFunction = 'linear';
-                    progressBarPlayedEl.style.width = rect.width + 'px';
+                    setProgressPlayedWidth(rect.width);
                 });
 
                 this.$on('progress-bar-stop', (v) => {
-                    console.log(v);
+                    console.log('stop: ' + v);
                     scrubberEl.style.transition = '';
-                    setScrubberPosition(0);
+                    setScrubberPosition(v * rect.width);
                     progressBarPlayedEl.style.transition = '';
-                    progressBarPlayedEl.style.width = v * rect.width + 'px';
+                    setProgressPlayedWidth(v * rect.width);
 
                 });
 
                 let setScrubberPosition = (x) => {
-                    console.log('moving to ' + x);
                     scrubberX = (x - scrubberSize/2);
                     scrubberEl.style.transform = 'translate(' + scrubberX.toString() + 'px)';
 
