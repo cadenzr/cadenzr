@@ -1,10 +1,11 @@
 <template>
-    <div class="progress-bar-container">
+    <div ref="progressBarContainer" class="progress-bar-container">
         <div ref="progressBar" class="progress-bar">
-            <div ref="progressBarHover" class="progress-bar-hover"></div>
-            <div ref="progressBarPlayed" class="progress-bar-played"></div>
-            <div ref="progressBarScrubber" class="progress-bar-scrubber"></div>
         </div>
+
+        <div ref="progressBarHover" class="progress-bar-hover"></div>
+        <div ref="progressBarPlayed" class="progress-bar-played"></div>
+        <div ref="progressBarScrubber" class="progress-bar-scrubber"></div>
     </div>
 </template>
 
@@ -28,6 +29,7 @@
 
                 let scrubberEl = (<any>this).$refs.progressBarScrubber;
                 let progressBarHoverEl = (<any>this).$refs.progressBarHover;
+                let progressBarContainerEl = (<any>this).$refs.progressBarContainer;
                 let progressBarPlayedEl = (<any>this).$refs.progressBarPlayed;
 
                 let scrubberComputedStyle = <any>window.getComputedStyle(scrubberEl);
@@ -100,26 +102,26 @@
 
 
 
-                (<any>this).$refs.progressBar.addEventListener('mousedown', (e) => {
+                (<any>this).$refs.progressBarContainer.addEventListener('mousedown', (e) => {
                     let scrubberX = mousePositionToScrubber(getMousePosition(e));
                     setScrubberPosition(scrubberX);
                     setProgressPlayedWidth(scrubberX);
                     scrubberStartMove(e);
                 });
 
-                (<any>this).$refs.progressBar.addEventListener('touchstart', (e) => {
+                (<any>this).$refs.progressBarContainer.addEventListener('touchstart', (e) => {
                     let scrubberX = mousePositionToScrubber(getMousePosition(e));
                     setScrubberPosition(scrubberX);
                     setProgressPlayedWidth(scrubberX);
                     scrubberStartMove(e);
                 });
 
-                (<any>this).$refs.progressBar.addEventListener('mousemove', (e) => {
+                (<any>this).$refs.progressBarContainer.addEventListener('mousemove', (e) => {
                     let scrubberX = mousePositionToScrubber(getMousePosition(e));
                     setProgressHoverWidth(scrubberX);
                 });
 
-                (<any>this).$refs.progressBar.addEventListener('mouseout', (e) => {
+                (<any>this).$refs.progressBarContainer.addEventListener('mouseout', (e) => {
                     setProgressHoverWidth(0);
                 });
             },
@@ -143,6 +145,9 @@ $progress-bar-scrubber-size: 15px;
 .progress-bar-container {
     width: 100%;
     position: relative;
+    height: $progress-bar-height;
+    cursor: pointer;
+    outline:none;
 
     .progress-bar-scrubber {
         opacity: 0;
@@ -152,18 +157,18 @@ $progress-bar-scrubber-size: 15px;
         background-color: red;
         position: absolute;
         bottom: 0px + $progress-bar-active-height/2 - $progress-bar-scrubber-size/2;
-        cursor: pointer;
+        z-index: 1000;   
     }
 
     .progress-bar {
         top: 0px;
-        height: $progress-bar-height;
+        height: 100%;
         //transition: height 0.1s;
         position: absolute;
         bottom: 0px;
         background-color: $progress-bar-color;
         width: 100%;
-        cursor: pointer;
+        z-index: 997;
     }
 
     .progress-bar-hover {
@@ -171,6 +176,7 @@ $progress-bar-scrubber-size: 15px;
         position: absolute;
         width: 0px;
         background-color: $progress-bar-hover-color;
+        z-index: 998;
     }
 
     .progress-bar-played {
@@ -178,22 +184,22 @@ $progress-bar-scrubber-size: 15px;
         position: absolute;
         width: 0px;
         background-color: $progress-bar-played-color;
+        z-index: 999;
     }
 }
 
 
 .progress-bar-container:hover {
 
-    .progress-bar {
-        height: $progress-bar-active-height;
-        top: -( $progress-bar-active-height -  $progress-bar-height);
+    .progress-bar, .progress-bar-hover, .progress-bar-played {
+        transform: scaleY(2);
     }
-    .progress-bar {
-        .progress-bar-scrubber {
-            display: block;
-            opacity: 1;
-        }
+
+    .progress-bar-scrubber {
+        display: block;
+        opacity: 1;
     }
+    
 
 }
 
