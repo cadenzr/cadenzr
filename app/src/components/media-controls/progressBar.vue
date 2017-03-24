@@ -11,9 +11,14 @@
 
 <script lang="ts">
     import Vue from 'vue';
+    import * as _ from 'lodash';
+    import PubSub from '@/PubSub';
+    import {events as AudioPlayerEvents} from '@/AudioPlayer';
+    import AudioPlayer from '@/AudioPlayer';
 
     interface ProgressBar extends Vue {
         width: number;
+        subscriptions: Array<any>;
     }
 
     export default {
@@ -21,6 +26,7 @@
             data: function () {
                 return {
                     width: 0,
+                    subscriptions: [],
                 }
             },
             mounted: function () {
@@ -39,29 +45,56 @@
                 this.width = rect.width;
                 let scrubberX = 0;
 
-                this.$on('progress-bar-start', (t) => {
-                    console.log('start: ' + t);
-                    scrubberEl.style.transition = 'transform ' + t + 's';
-                    scrubberEl.style.transitionTimingFunction = 'linear';
-                    setScrubberPosition(rect.width);
+                let isSeeking = false;
 
-                    progressBarPlayedEl.style.transition = 'width ' + t + 's';
-                    progressBarPlayedEl.style.transitionTimingFunction = 'linear';
-                    setProgressPlayedWidth(rect.width);
-                });
+                let isPlaying = false;
+                let timeLeft = 0;
 
-                this.$on('progress-bar-stop', (v) => {
-                    console.log('stop: ' + v);
-                    scrubberEl.style.transition = '';
-                    setScrubberPosition(v * rect.width);
-                    progressBarPlayedEl.style.transition = '';
-                    setProgressPlayedWidth(v * rect.width);
+                (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.Play, (song) => {
+                    isPlaying = true;
+                    let played = (<any>AudioPlayer).currentSongTime();
+                    timeLeft = song.duration - played;
+                    let progress = played / song.duration;
 
-                });
+                    setScrubberPosition(progress * rect.width);
+                    prevTimestamp = 0;
+                    requestAnimationFrame(renderScrubber);
+                }));
+
+                (<any>self).subscriptions.push(PubSub.subscribe(AudioPlayerEvents.Pause, () => {
+                    isPlaying = false;
+                }));
+
+
+
+                let prevTimestamp = 0;
+                let renderScrubber = (timestamp) => {
+                    if(isPlaying && isSeeking) {
+                        return;
+                    }
+
+                    let dt = 0;
+                    if(prevTimestamp === 0) {
+                        dt = 0;
+                        prevTimestamp = timestamp;
+                    } else {
+                        dt = (timestamp - prevTimestamp)/1000;
+                        prevTimestamp = timestamp;
+                    }
+
+                    let increase = ((rect.width-scrubberX)/timeLeft) * dt;
+                    setScrubberPosition(scrubberX + increase);
+                    setProgressPlayedWidth(scrubberX + increase);
+
+                    if(isPlaying) {
+                        window.requestAnimationFrame(renderScrubber);
+                    }
+                };
 
                 let setScrubberPosition = (x) => {
-                    scrubberX = (x - scrubberSize/2);
-                    scrubberEl.style.transform = 'translate(' + scrubberX.toString() + 'px)';
+                    scrubberX = x;
+                    let shifted = (scrubberX - scrubberSize/2);
+                    scrubberEl.style.transform = 'translate(' + shifted.toString() + 'px)';
 
                 };
 
@@ -88,16 +121,20 @@
                 };
 
                 let scrubberReleased = (e) => {
+                    isSeeking = false;
                     window.removeEventListener('mousemove', scrubberMove);
                     window.removeEventListener('mouseup', scrubberReleased);
                     window.removeEventListener('touchmove', scrubberMove);
                     window.removeEventListener('touchend', scrubberReleased);
 
-                    self.$parent.$emit('progress-change', scrubberX/rect.width);
+                    let progress = scrubberX / rect.width;
+                    AudioPlayer.seekFromPercentage(progress);
+                    AudioPlayer.play();
                 };
 
                 let scrubberStartMove = (e) => {
                     e.preventDefault();
+                    isSeeking = true;
                     window.addEventListener('mousemove', scrubberMove);
                     window.addEventListener('mouseup', scrubberReleased);
                     window.addEventListener('touchmove', scrubberMove);
@@ -148,6 +185,9 @@
                 });
             },
             beforeDestroy () {
+                _.forEach((<any>this).subscriptions, (s:any) => {
+                    PubSub.unsubscribe(s);
+                });
             },
             methods: {
 
