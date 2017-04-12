@@ -9,6 +9,7 @@
             <div class="album-meta-info pure-u-20-24">
                 <h1>{{album.name}}</h1>
                 <h2>{{album.getSongs()[0].artist}} <span>{{album.year}}</span></h2>
+                <h2><a :href="downloadUrl"><span class="fa fa-download"></span></a></h2>
             </div>
         </div>
     
@@ -71,6 +72,7 @@
                     sortOrder: 'asc',
                     sortKey: 'name',
                     player: player,
+                    downloadUrl: '',
                 }
             },
             computed: {
@@ -98,6 +100,7 @@
                       });
 
                       self.album = new Album(album);
+                      self.downloadUrl = Api.apiEndpoint + 'albums/' + album.id.toString() + '/download';
                       self.show = true;
                   });
               },

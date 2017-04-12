@@ -45,32 +45,32 @@ func TestArtistControllerIndex(t *testing.T) {
 			json.NewDecoder(rec.Result().Body).Decode(response)
 			token = response.Token
 		})
-		
+
 		Convey("Test index no-artists.", t, func() {
-		
-		    req := httptest.NewRequest("get", "/api/artists", nil)
-		    req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		    req.Header.Set("Authorization", "Bearer "+token)
-		    rec := httptest.NewRecorder()
-		    c := e.NewContext(req, rec)
-		
-		    So(ArtistController.Index(c), ShouldBeNil)
-		    So(rec.Code, ShouldEqual, http.StatusOK)
-		
-		    response := &struct {
-		        Data []artistResponse
-		    }{
-		        Data: []artistResponse{},
-		    }
-		    err := json.NewDecoder(rec.Result().Body).Decode(response)
-		    So(err, ShouldEqual, nil)
-		    So(len(response.Data), ShouldEqual, 0)
+
+			req := httptest.NewRequest("get", "/api/artists", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			req.Header.Set("Authorization", "Bearer "+token)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			So(ArtistController.Index(c), ShouldBeNil)
+			So(rec.Code, ShouldEqual, http.StatusOK)
+
+			response := &struct {
+				Data []artistResponse
+			}{
+				Data: []artistResponse{},
+			}
+			err := json.NewDecoder(rec.Result().Body).Decode(response)
+			So(err, ShouldEqual, nil)
+			So(len(response.Data), ShouldEqual, 0)
 		})
-		
+
 		// Add a song to the database for testing...
-		        probers.Initialize()
-		        go scan.ScanFilesystem("../media/0demo/Curse the Day.mp3")
-		        <-scan.ScanDone
+		probers.Initialize()
+		go scan.ScanFilesystem("../media/0demo/Curse the Day.mp3")
+		<-scan.ScanDone
 
 		Convey("Test index artists.", t, func() {
 
