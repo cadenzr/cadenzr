@@ -30,6 +30,7 @@ func startAPI() {
 
 	r.GET("/albums", controllers.AlbumController.Index)
 	r.GET("/albums/:id", controllers.AlbumController.Show)
+	e.GET("/api/albums/:id/download", controllers.AlbumController.Download)
 	r.GET("/playlists", controllers.PlaylistController.Index)
 	r.POST("/playlists", controllers.PlaylistController.Create)
 	r.DELETE("/playlists/:id/songs/:sid", controllers.PlaylistController.DeleteSong)

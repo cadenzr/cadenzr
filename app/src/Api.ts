@@ -395,7 +395,7 @@ class Api {
     }
 
 
-    private apiEndpoint: string = '/api/';
+    public apiEndpoint: string = '/api/';
 }
 
 export { events };

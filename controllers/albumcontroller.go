@@ -1,7 +1,11 @@
 package controllers
 
 import (
+	"archive/zip"
+	"bytes"
+	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/cadenzr/cadenzr/db"
@@ -145,6 +149,55 @@ func (c *albumController) Show(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, TransformAlbum(album))
+}
+
+func (c *albumController) Download(ctx echo.Context) error {
+	id := StrToUint(ctx.Param("id"))
+
+	album := &models.Album{}
+	gormDB := db.DB.Preload("Songs").Preload("Cover").Preload("Songs.Album").Preload("Songs.Artist").Preload("Songs.Cover").First(&album, "id = ?", id)
+	if gormDB.RecordNotFound() {
+		log.Debugf("AlbumController::Download Album '%d' not found.", id)
+		return ctx.NoContent(http.StatusNotFound)
+	} else if gormDB.Error != nil {
+		log.Errorf("AlbumController::Download Database failed: %v", gormDB.Error)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+
+	// Create the zip archive containing songs
+	// Create a buffer to write our archive to.
+	buf := new(bytes.Buffer)
+
+	// Create a new zip archive.
+	w := zip.NewWriter(buf)
+
+	for _, song := range album.Songs {
+		f, err := w.Create(filepath.Base(song.Path))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		body, err := ioutil.ReadFile(song.Path)
+		if err != nil {
+			log.Errorf("AlbumController::Download Couldn't read song path: %v", song.Path)
+			return ctx.NoContent(http.StatusInternalServerError)
+		}
+
+		_, err = f.Write(body)
+		if err != nil {
+			log.Errorf("AlbumController::Download Couldn't write song to zip: %v", song.Path)
+			return ctx.NoContent(http.StatusInternalServerError)
+		}
+	}
+
+	// Make sure to check the error on Close.
+	err := w.Close()
+	if err != nil {
+		log.Errorf("AlbumController::Download Couldn't create archive for download: %v", err.Error())
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+
+	return ctx.Stream(http.StatusOK, "application/zip", buf)
 }
 
 // AlbumController Contains the actions for the 'albums' endpoint.
