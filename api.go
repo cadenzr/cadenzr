@@ -58,6 +58,9 @@ func startAPI() {
 		db.DB.Find(&songs, "album_id = ?", id)
 
 		endpoint := "http://" + config.Config.Hostname
+		if config.Config.Hostname == "" {
+			endpoint = "http://localhost"
+		}
 		if config.Config.Port != 0 {
 			endpoint = endpoint + ":" + strconv.Itoa(int(config.Config.Port))
 		}
@@ -74,7 +77,8 @@ func startAPI() {
 			response.WriteString(endpoint + strconv.Itoa(int(song.ID)) + "/stream?from=m3u8\n")
 		}
 
-		return c.Stream(http.StatusOK, "text/plain", response)
+		c.Response().Header().Set("Content-Disposition", "attachment; filename=playlist.m3u8")
+		return c.Stream(http.StatusOK, "application/x-mpegurl", response)
 	})
 
 	jwtConf := middleware.JWTConfig{

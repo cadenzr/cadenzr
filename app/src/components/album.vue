@@ -9,7 +9,7 @@
             <div class="album-meta-info pure-u-20-24">
                 <h1>{{album.name}}</h1>
                 <h2>{{album.getSongs()[0].artist}} <span>{{album.year}}</span></h2>
-                <h2><a :href="downloadUrl"><span class="fa fa-download"></span></a></h2>
+                <h2><a :href="downloadUrl"><span class="fa fa-download"></span></a> <a :href="downloadPlaylistUrl"><span class="fa fa-list"></span></a></h2>
             </div>
         </div>
     
@@ -101,6 +101,7 @@
 
                       self.album = new Album(album);
                       self.downloadUrl = Api.apiEndpoint + 'albums/' + album.id.toString() + '/download';
+                      self.downloadPlaylistUrl = Api.apiEndpoint + 'albums/' + album.id.toString() + '/playlist.m3u8';
                       self.show = true;
                   });
               },
