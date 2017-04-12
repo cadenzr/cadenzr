@@ -9,7 +9,10 @@
             <div class="album-meta-info pure-u-20-24">
                 <h1>{{album.name}}</h1>
                 <h2>{{album.getSongs()[0].artist}} <span>{{album.year}}</span></h2>
-                <h2><a :href="downloadUrl"><span class="fa fa-download"></span></a> <a :href="downloadPlaylistUrl"><span class="fa fa-list"></span></a></h2>
+                <h2>
+                    <a :href="downloadUrl" data-balloon="Download album" data-balloon-pos="up"><span class="fa fa-download"></span></a> 
+                    <a :href="downloadPlaylistUrl" data-balloon="Download album stream file (.m3u8)" data-balloon-pos="up"><span class="fa fa-list"></span></a>
+                </h2>
             </div>
         </div>
     
