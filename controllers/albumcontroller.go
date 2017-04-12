@@ -197,6 +197,7 @@ func (c *albumController) Download(ctx echo.Context) error {
 		return ctx.NoContent(http.StatusInternalServerError)
 	}
 
+	ctx.Response().Header().Set("Content-Disposition", "attachment; filename="+album.Name+".zip")
 	return ctx.Stream(http.StatusOK, "application/zip", buf)
 }
 
