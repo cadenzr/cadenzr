@@ -57,7 +57,12 @@ func (c *playlistController) Show(ctx echo.Context) error {
 	id := StrToUint(ctx.Param("id"))
 
 	playlist := &models.Playlist{}
-	if gormDB := db.DB.Preload("Songs").Preload("Songs.Album").Preload("Songs.Artist").Preload("Songs.Cover").Where("id = ?", id).Find(&playlist); gormDB.Error != nil {
+	gormDB := db.DB.Preload("Songs").Preload("Songs.Album").Preload("Songs.Artist").Preload("Songs.Cover").Where("id = ?", id).Find(&playlist)
+
+	if gormDB.RecordNotFound() {
+		log.Debugf("PlaylistController::Show Playlist '%d' not found.", id)
+		return ctx.NoContent(http.StatusNotFound)
+	} else if gormDB.Error != nil {
 		log.Errorf("PlaylistController::Show Database failed: %v", gormDB.Error)
 		return ctx.NoContent(http.StatusInternalServerError)
 	}

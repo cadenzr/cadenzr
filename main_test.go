@@ -125,7 +125,15 @@ func TestApi(t *testing.T) {
 
 		Convey("Test albums playlist m3u8", func() {
 
-			_, status, err := Do("GET", endpoint+"/api/albums/1/playlist.m3u8")
+			_, status, err := Do("GET", endpoint+"/api/albums/1/playlist.m3u8?token="+token)
+			So(err, ShouldEqual, nil)
+			So(status, ShouldEqual, 200)
+
+		})
+
+		Convey("Test albums album download", func() {
+
+			_, status, err := Do("GET", endpoint+"/api/albums/1/download?token="+token)
 			So(err, ShouldEqual, nil)
 			So(status, ShouldEqual, 200)
 
@@ -165,7 +173,7 @@ func TestApi(t *testing.T) {
 
 		Convey("Test single playlist", func() {
 
-			_, status, err := Do("GET", endpoint+"/api/playlist/1")
+			_, status, err := Do("GET", endpoint+"/api/playlists/1")
 			So(err, ShouldEqual, nil)
 			So(status, ShouldEqual, 404)
 
