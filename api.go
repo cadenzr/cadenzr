@@ -27,10 +27,20 @@ func startAPI() {
 
 	// Restricted group
 	r := e.Group("/api")
+	jwtConf := middleware.JWTConfig{
+		Claims:     &controllers.UserLoginClaim{},
+		SigningKey: controllers.Secret,
+	}
+	r.Use(middleware.JWTWithConfig(jwtConf))
+
+	jwtConfQuery := jwtConf
+	jwtConfQuery.TokenLookup = "query:token"
+	rQuery := e.Group("/api")
+	rQuery.Use(middleware.JWTWithConfig(jwtConfQuery))
 
 	r.GET("/albums", controllers.AlbumController.Index)
 	r.GET("/albums/:id", controllers.AlbumController.Show)
-	e.GET("/api/albums/:id/download", controllers.AlbumController.Download)
+	rQuery.GET("/albums/:id/download", controllers.AlbumController.Download)
 	r.GET("/playlists", controllers.PlaylistController.Index)
 	r.POST("/playlists", controllers.PlaylistController.Create)
 	r.DELETE("/playlists/:id/songs/:sid", controllers.PlaylistController.DeleteSong)
@@ -51,7 +61,7 @@ func startAPI() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	e.GET("/api/albums/:id/playlist.m3u8", func(c echo.Context) error {
+	rQuery.GET("/albums/:id/playlist.m3u8", func(c echo.Context) error {
 		id := controllers.StrToUint(c.Param("id"))
 
 		songs := []*models.Song{}
@@ -80,12 +90,6 @@ func startAPI() {
 		c.Response().Header().Set("Content-Disposition", "attachment; filename=playlist.m3u8")
 		return c.Stream(http.StatusOK, "application/x-mpegurl", response)
 	})
-
-	jwtConf := middleware.JWTConfig{
-		Claims:     &controllers.UserLoginClaim{},
-		SigningKey: controllers.Secret,
-	}
-	r.Use(middleware.JWTWithConfig(jwtConf))
 
 	e.Logger.Fatal(e.Start(config.Config.Hostname + ":" + strconv.Itoa(int(config.Config.Port))))
 }

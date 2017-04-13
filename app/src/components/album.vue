@@ -103,8 +103,8 @@
                       });
 
                       self.album = new Album(album);
-                      self.downloadUrl = Api.apiEndpoint + 'albums/' + album.id.toString() + '/download';
-                      self.downloadPlaylistUrl = Api.apiEndpoint + 'albums/' + album.id.toString() + '/playlist.m3u8';
+                      self.downloadUrl = Api.apiEndpoint + 'albums/' + album.id.toString() + '/download?token=' + Api.retrieveToken();
+                      self.downloadPlaylistUrl = Api.apiEndpoint + 'albums/' + album.id.toString() + '/playlist.m3u8?token=' + Api.retrieveToken();
                       self.show = true;
                   });
               },
