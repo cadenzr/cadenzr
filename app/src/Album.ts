@@ -41,7 +41,7 @@ class Album {
 
     getCoverUrl(): string {
         if (!this.cover) {
-            return '';
+            return 'assets/images/cover.svg';
         }
 
         return this.cover;
