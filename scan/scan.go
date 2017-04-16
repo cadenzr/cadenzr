@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cadenzr/cadenzr/db"
 	"github.com/cadenzr/cadenzr/log"
@@ -50,6 +51,7 @@ func ScanFilesystem(mediaDir string) {
 		ScanDone <- struct{}{}
 	}()
 
+	start := time.Now()
 	newFiles := 0
 
 	filepath.Walk(mediaDir, func(path string, info os.FileInfo, err error) error {
@@ -199,5 +201,6 @@ func ScanFilesystem(mediaDir string) {
 		return nil
 	})
 
-	log.Infof("Added %d new songs.", newFiles)
+	dur := time.Since(start)
+	log.Infof("Added %d new songs in %.2f seconds.", newFiles, dur.Seconds())
 }
