@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cadenzr/cadenzr/db"
@@ -52,7 +55,13 @@ func ScanFilesystem(mediaDir string) {
 	}()
 
 	start := time.Now()
-	newFiles := 0
+	var newFiles uint64
+	workerCh := make(chan string)
+	wg := &sync.WaitGroup{}
+	for i := 0; i < runtime.NumCPU(); i++ {
+		wg.Add(1)
+		go worker(workerCh, wg, &newFiles)
+	}
 
 	filepath.Walk(mediaDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -64,10 +73,32 @@ func ScanFilesystem(mediaDir string) {
 			return nil
 		}
 
+		workerCh <- path
+
+		return nil
+	})
+
+	close(workerCh)
+	wg.Wait()
+	dur := time.Since(start)
+	log.Infof("Added %d new songs in %.2f seconds.", newFiles, dur.Seconds())
+}
+
+func worker(workerCh chan string, wg *sync.WaitGroup, newFiles *uint64) {
+	defer wg.Done()
+
+	var path string
+	var ok bool
+	for {
+		path, ok = <-workerCh
+		if !ok {
+			break
+		}
+
 		mimeType := mime.TypeByExtension(filepath.Ext(path))
 		if !probers.HasProber(mimeType) {
 			log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Skipping file. Unknown mime.")
-			return nil
+			continue
 		}
 
 		log.WithFields(log.Fields{"path": path, "mime": mimeType}).Debug("Found file.")
@@ -77,18 +108,18 @@ func ScanFilesystem(mediaDir string) {
 		gormDB := db.DB.Table("songs").Where("path = ?", path).Count(&exists)
 		if gormDB.Error != nil {
 			log.Errorf("scanFilesystem Could not check if path exists. Database failed %v.", gormDB.Error)
-			return nil
+			continue
 		}
 
 		if exists != 0 {
 			log.Debugf("Skipping file. Path already in database: %s.", path)
-			return nil
+			continue
 		}
 
 		meta, err := probers.ProbeAudioFile(path)
 		if err != nil {
 			log.WithFields(log.Fields{"reason": err.Error(), "file": path}).Error("Probing file failed.")
-			return nil
+			continue
 		}
 
 		var cover *models.Image
@@ -137,7 +168,7 @@ func ScanFilesystem(mediaDir string) {
 		song.Name = meta.Title
 		if len(song.Name) == 0 {
 			log.WithFields(log.Fields{"file": path}).Error("Could not get name of song.")
-			return nil
+			continue
 		}
 		song.Mime = mimeType
 		song.Path = path
@@ -164,7 +195,7 @@ func ScanFilesystem(mediaDir string) {
 			}
 			if gormDB := db.DB.FirstOrCreate(album, "name = ?", album.Name); gormDB.Error != nil {
 				log.Errorf("Could not create/get album '%s': %v", album.Name, gormDB.Error)
-				return nil
+				continue
 			}
 
 			song.Album = album
@@ -178,7 +209,7 @@ func ScanFilesystem(mediaDir string) {
 
 			if gormDB := db.DB.FirstOrCreate(artist, "name = ?", artist.Name); gormDB.Error != nil {
 				log.Errorf("Could not create/get artist '%s': %v", artist.Name, gormDB.Error)
-				return nil
+				continue
 			}
 
 			song.Artist = artist
@@ -194,13 +225,9 @@ func ScanFilesystem(mediaDir string) {
 
 		if gormDB := db.DB.Create(song); gormDB.Error != nil {
 			log.Errorf("Could not create song '%s': %v", song.Name, gormDB.Error)
-			return nil
+			continue
 		}
 
-		newFiles++
-		return nil
-	})
-
-	dur := time.Since(start)
-	log.Infof("Added %d new songs in %.2f seconds.", newFiles, dur.Seconds())
+		atomic.AddUint64(newFiles, 1)
+	}
 }
