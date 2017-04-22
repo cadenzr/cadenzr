@@ -153,6 +153,7 @@ func worker(workerCh chan string, wg *sync.WaitGroup, newFiles *uint64) {
 						}
 
 						if gormDB.Error != nil {
+							err = gormDB.Error
 							log.WithFields(log.Fields{"reason": err.Error(), "file": cover.Path}).Error("Could not get or insert image.")
 							cover = nil
 						}
