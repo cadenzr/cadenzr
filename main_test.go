@@ -49,7 +49,7 @@ func TestApi(t *testing.T) {
 	go main()
 	time.Sleep(time.Second * 1)
 
-	Convey("Test login", t, func() {
+	Convey("Test login", t, func(c C) {
 
 		resp, err := http.PostForm(
 			endpoint+"/api/login",
@@ -79,7 +79,7 @@ func TestApi(t *testing.T) {
 
 	})
 
-	Convey("Test scan", t, func() {
+	Convey("Test scan", t, func(c C) {
 
 		_, status, err := Do("POST", endpoint+"/api/scan")
 		So(err, ShouldEqual, nil)
@@ -87,9 +87,9 @@ func TestApi(t *testing.T) {
 
 	})
 
-	Convey("Tests for albums", t, func() {
+	Convey("Tests for albums", t, func(c C) {
 
-		Convey("Test get albums", func() {
+		Convey("Test get albums", func(c C) {
 
 			body, status, err := Do("GET", endpoint+"/api/albums")
 			So(err, ShouldEqual, nil)
@@ -105,7 +105,7 @@ func TestApi(t *testing.T) {
 
 		})
 
-		Convey("Test single album", func() {
+		Convey("Test single album", func(c C) {
 
 			body, status, err := Do("GET", endpoint+"/api/albums/1")
 			So(err, ShouldEqual, nil)
@@ -123,7 +123,7 @@ func TestApi(t *testing.T) {
 
 		})
 
-		Convey("Test albums playlist m3u8", func() {
+		Convey("Test albums playlist m3u8", func(c C) {
 
 			_, status, err := Do("GET", endpoint+"/api/albums/1/playlist.m3u8?token="+token)
 			So(err, ShouldEqual, nil)
@@ -131,7 +131,7 @@ func TestApi(t *testing.T) {
 
 		})
 
-		Convey("Test albums album download", func() {
+		Convey("Test albums album download", func(c C) {
 
 			_, status, err := Do("GET", endpoint+"/api/albums/1/download?token="+token)
 			So(err, ShouldEqual, nil)
@@ -141,9 +141,9 @@ func TestApi(t *testing.T) {
 
 	})
 
-	Convey("Tests for songs", t, func() {
+	Convey("Tests for songs", t, func(c C) {
 
-		Convey("Test song stream", func() {
+		Convey("Test song stream", func(c C) {
 
 			_, status, err := Do("GET", endpoint+"/api/songs/1/stream")
 			So(err, ShouldEqual, nil)
@@ -151,7 +151,7 @@ func TestApi(t *testing.T) {
 
 		})
 
-		Convey("Test song played", func() {
+		Convey("Test song played", func(c C) {
 
 			_, status, err := Do("POST", endpoint+"/api/songs/1/played")
 			So(err, ShouldEqual, nil)
@@ -161,9 +161,9 @@ func TestApi(t *testing.T) {
 
 	})
 
-	Convey("Tests for playlists", t, func() {
+	Convey("Tests for playlists", t, func(c C) {
 
-		Convey("Test playlists", func() {
+		Convey("Test playlists", func(c C) {
 
 			_, status, err := Do("GET", endpoint+"/api/playlists")
 			So(err, ShouldEqual, nil)
@@ -171,7 +171,7 @@ func TestApi(t *testing.T) {
 
 		})
 
-		Convey("Test single playlist", func() {
+		Convey("Test single playlist", func(c C) {
 
 			_, status, err := Do("GET", endpoint+"/api/playlists/1")
 			So(err, ShouldEqual, nil)
