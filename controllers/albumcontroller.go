@@ -15,16 +15,18 @@ import (
 )
 
 type songResponse struct {
-	ID       uint               `json:"id"`
-	Name     string             `json:"name"`
-	Artist   models.NullString  `json:"artist"`
-	Album    models.NullString  `json:"album"`
-	Year     models.NullInt64   `json:"year"`
-	Genre    models.NullString  `json:"genre"`
-	Duration models.NullFloat64 `json:"duration"`
-	Mime     string             `json:"mime"`
-	Cover    models.NullString  `json:"cover"`
-	Played   uint               `json:"played"`
+	ID          uint               `json:"id"`
+	Name        string             `json:"name"`
+	Artist      models.NullString  `json:"artist"`
+	Album       models.NullString  `json:"album"`
+	Year        models.NullInt64   `json:"year"`
+	Track       models.NullInt64   `json:"track"`
+	TotalTracks models.NullInt64   `json:"totaltracks"`
+	Genre       models.NullString  `json:"genre"`
+	Duration    models.NullFloat64 `json:"duration"`
+	Mime        string             `json:"mime"`
+	Cover       models.NullString  `json:"cover"`
+	Played      uint               `json:"played"`
 }
 
 type imageResponse struct {
@@ -84,6 +86,8 @@ func TransFormSong(song *models.Song) *songResponse {
 	r.ID = song.ID
 	r.Name = song.Name
 	r.Year = song.Year
+	r.Track = song.Track
+	r.TotalTracks = song.TotalTracks
 	r.Genre = song.Genre
 	r.Duration = song.Duration
 	r.Mime = song.Mime

@@ -154,6 +154,16 @@ func ScanFilesystem(mediaDir string) {
 		} else {
 			log.WithFields(log.Fields{"file": path}).Debug("No year found.")
 		}
+		if meta.Track != 0 {
+			song.Track.Set(int64(meta.Track))
+		} else {
+			log.WithFields(log.Fields{"file": path}).Debug("No track found.")
+		}
+		if meta.TotalTracks != 0 {
+			song.TotalTracks.Set(int64(meta.TotalTracks))
+		} else {
+			log.WithFields(log.Fields{"file": path}).Debug("No total tracks found.")
+		}
 		if len(meta.Album) > 0 {
 			album := &models.Album{
 				Name: meta.Album,

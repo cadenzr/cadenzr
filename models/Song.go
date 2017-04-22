@@ -19,7 +19,9 @@ type Song struct {
 	Cover   *Image `gorm:"ForeignKey:CoverID"`
 	CoverID NullInt64
 
-	Year NullInt64
+	Year        NullInt64
+	Track       NullInt64
+	TotalTracks NullInt64
 
 	Genre    NullString
 	Duration NullFloat64

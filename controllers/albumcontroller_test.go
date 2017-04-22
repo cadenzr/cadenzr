@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -74,6 +75,23 @@ func TestAlbumControllerIndex(t *testing.T) {
 			&models.Album{
 				Name: "album1",
 				Year: year1,
+				Songs: []*models.Song{
+					&models.Song{
+						Name: "song name",
+						Track: models.NullInt64{
+							sql.NullInt64{
+								Int64: 42,
+								Valid: true,
+							},
+						},
+						TotalTracks: models.NullInt64{
+							sql.NullInt64{
+								Int64: 142,
+								Valid: true,
+							},
+						},
+					},
+				},
 			},
 			&models.Album{
 				Name: "album2",
@@ -108,6 +126,10 @@ func TestAlbumControllerIndex(t *testing.T) {
 			for i, album := range response.Data {
 				So(albums[i].Name, ShouldEqual, album.Name)
 				So(albums[i].Year.Int64, ShouldEqual, album.Year.Int64)
+				for j, song := range album.Songs {
+					So(albums[i].Songs[j].Name, ShouldEqual, song.Name)
+					So(albums[i].Songs[j].Track.Int64, ShouldEqual, song.Track.Int64)
+				}
 			}
 		})
 	})
