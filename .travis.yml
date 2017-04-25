@@ -7,6 +7,7 @@ go:
 
 os:
   - linux
+  - osx
 
 install:
   - go get github.com/smartystreets/goconvey/convey
