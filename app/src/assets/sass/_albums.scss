@@ -36,6 +36,33 @@
                 transition: 0.1s opacity ease;
                 position: relative;
                 
+                
+                &[lazy=loading] {
+                    background-color: #1e1e1e;
+                }
+                
+                &[lazy=loading]:before {
+                    $size: 25%;
+                    content: '';
+                    box-sizing: border-box;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: $size;
+                    height: $size;
+                    margin-top: -$size/2;
+                    margin-left: -$size/2;
+                    border-radius: 50%;
+                    border: 2px solid #ccc;
+                    border-top-color: #333;
+                    animation: spinner 1.5s linear infinite;
+                    
+                    @keyframes spinner {
+                      to {transform: rotate(360deg);}
+                    }
+                }
+                
+                
                 .album-play {
                     
                     position: absolute;

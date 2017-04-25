@@ -2,6 +2,7 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import * as VueResource from 'vue-resource';
 import * as Dropzone from 'vue2-dropzone';
+import * as VueLazyload from 'vue-lazyload'
 import * as _ from 'lodash';
 
 import components from './components';
@@ -14,6 +15,7 @@ import './assets/sass/style.scss';
 
 Vue.use(VueResource)
 Vue.component('dropzone', Dropzone);
+Vue.use(VueLazyload)
 
 
 import Notifier from './Notifier';

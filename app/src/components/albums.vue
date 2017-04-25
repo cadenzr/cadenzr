@@ -10,7 +10,7 @@
                 <router-link :to="{ path: album.link }">
                     <div class="album">
                         <div class="album-cover"
-                             :style="{ 'background-image': 'url(' + album.getCoverUrl() + ')' }">
+                            v-lazy:background-image="album.getCoverUrl()">
                             <div class="album-play">
                                 <div class="album-play-button"
                                      @click.prevent="playAlbum(album)">
