@@ -104,8 +104,6 @@ type prober struct {
 var probers = []*prober{}
 
 func Initialize() {
-	id3Prober := &id3AudioProber{}
-	_ = id3Prober
 	genericTagProber := &genericTagAudioProber{}
 	ffProber := &ffprobeAudioProber{}
 
