@@ -28,6 +28,7 @@ Then go to the `app` directory and build all assets for the front-end:
 
 Back in the main Cadenzr folder (`$GOPATH/src/github.com/cadenzr/cadenzr`), build the project and run the web service:
 
+    $ go-bindata-assetfs -prefix="app" -ignore="\\.DS_Store" app/dist/...
     $ go build
     $ ./cadenzr
 

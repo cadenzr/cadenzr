@@ -4,22 +4,35 @@ import (
 	"bytes"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/cadenzr/cadenzr/config"
 	"github.com/cadenzr/cadenzr/controllers"
 	"github.com/cadenzr/cadenzr/db"
 
+	static "github.com/Code-Hex/echo-static"
 	"github.com/cadenzr/cadenzr/models"
+	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
+
+func assets() *assetfs.AssetFS {
+	assetInfo := func(path string) (os.FileInfo, error) {
+		return os.Stat(path)
+	}
+	for k := range _bintree.Children {
+		return &assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: assetInfo, Prefix: k}
+	}
+	panic("unreachable")
+}
 
 func startAPI() {
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 
-	e.Static("/", "app/dist")
+	e.Use(static.ServeRoot("/", assets()))
 	e.Static("/images", "images")
 
 	// Login route
