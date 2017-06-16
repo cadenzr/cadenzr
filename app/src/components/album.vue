@@ -21,7 +21,7 @@
                    class="playlist">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th><a v-on:click="toggleSort('track')">#</a></th>
                         <th><a v-on:click="toggleSort('name')">Title</a></th>
                         <th class="sm-hide"><a v-on:click="toggleSort('artist')">Artist</a></th>
                         <th class="md-hide"><a v-on:click="toggleSort('album')">Album</a></th>
@@ -32,7 +32,7 @@
                     <tr v-for="(song, $index) in sortedSongs"
                         v-on:click="play(song)"
                         v-bind:class="{ playing: player.isCurrentSong(song) }">
-                        <td>{{$index+1}}</td>
+                        <td>{{song.track}}</td>
                         <td>{{song.name}}</td>
                         <td class="sm-hide">{{song.artist}}</td>
                         <td class="md-hide">{{song.album}}</td>
@@ -73,14 +73,15 @@
                     album: new Album(),
                     show: false,
                     sortOrder: 'asc',
-                    sortKey: 'name',
+                    sortKey: 'track', // sort on track number by default
                     player: player,
                     downloadUrl: '',
                 }
             },
             computed: {
                 sortedSongs: function() {
-                    return _.orderBy(this.album.getSongs(), [this.sortKey], [this.sortOrder]);
+                    console.log(this.album);
+                    return _.orderBy(this.album.getSongs(), [this.sortKey, 'track'], [this.sortOrder]);
                 }
             },
             mounted () {
