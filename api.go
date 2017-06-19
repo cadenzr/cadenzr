@@ -41,6 +41,7 @@ func startAPI() {
 	r.GET("/albums", controllers.AlbumController.Index)
 	r.GET("/albums/:id", controllers.AlbumController.Show)
 	rQuery.GET("/albums/:id/download", controllers.AlbumController.Download)
+	r.GET("/artists", controllers.ArtistController.Index)
 	r.GET("/playlists", controllers.PlaylistController.Index)
 	r.POST("/playlists", controllers.PlaylistController.Create)
 	r.DELETE("/playlists/:id/songs/:sid", controllers.PlaylistController.DeleteSong)

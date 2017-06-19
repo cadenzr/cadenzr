@@ -69,7 +69,7 @@ func TestArtistControllerIndex(t *testing.T) {
 
 		// Add a song to the database for testing...
 		probers.Initialize()
-		go scan.ScanFilesystem("../media/0demo/Curse the Day.mp3")
+		go scan.ScanFilesystem("../media/0demo/")
 		<-scan.ScanDone
 
 		Convey("Test index artists.", t, func() {
@@ -90,10 +90,16 @@ func TestArtistControllerIndex(t *testing.T) {
 			}
 			err := json.NewDecoder(rec.Result().Body).Decode(response)
 			So(err, ShouldEqual, nil)
-			So(len(response.Data), ShouldEqual, 1)
+			So(len(response.Data), ShouldEqual, 2)
 			So(response.Data[0].Name, ShouldEqual, "Brain Purist")
-			So(len(response.Data[0].Songs), ShouldEqual, 1)
-			So(response.Data[0].Songs[0].Name, ShouldEqual, "Curse the Day (Radio Edit)")
+			So(len(response.Data[0].Albums), ShouldEqual, 1)
+			So(response.Data[0].Albums[0].Name, ShouldEqual, "Curse the Day (Single versions)")
+			So(len(response.Data[0].Albums[0].Songs), ShouldEqual, 1)
+			So(response.Data[0].Albums[0].Songs[0].Name, ShouldEqual, "Curse the Day (Radio Edit)")
+			
+			So(response.Data[1].Name, ShouldEqual, "KAENEL")
+			So(len(response.Data[1].Albums), ShouldEqual, 1)
+			So(len(response.Data[1].Albums[0].Songs), ShouldEqual, 2)
 		})
 	})
 }

@@ -12,6 +12,7 @@ let router = new Router({
         { path: '/', component: components.albumsComponent, meta: { requiresAuth: true } },
         { path: '/albums', component: components.albumsComponent, meta: { requiresAuth: true } },
         { path: '/albums/:id', component: components.albumComponent, meta: { requiresAuth: true } },
+        { path: '/artists', component: components.artistsComponent, meta: { requiresAuth: true } },
         { path: '/current-queue', component: components.currentQueueComponent, meta: { requiresAuth: true } },
         { path: '/login', component: components.loginComponent },
         { path: '/playlists/:id', component: components.playlistComponent, meta: { requiresAuth: true } },

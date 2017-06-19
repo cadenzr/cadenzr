@@ -9,5 +9,6 @@ type Artist struct {
 	gorm.Model
 
 	Name  string `gorm:"not null,unique_index"`
+	Albums []*Album
 	Songs []*Song
 }

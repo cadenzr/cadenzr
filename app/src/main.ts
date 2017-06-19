@@ -35,6 +35,7 @@ var app = new Vue({
     components: {
         'album': components.albumComponent,
         'albums': components.albumsComponent,
+        'artists': components.albumsComponent,
         'audio-player': components.audioPlayerComponent,
         'current-queue': components.currentQueueComponent,
         'login': components.loginComponent,

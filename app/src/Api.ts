@@ -101,6 +101,34 @@ class Api {
 
         return p;
     }
+    
+    
+    getArtists(): Promise<any> {
+        let p = new Promise<any>((resolve, reject) => {
+            $.ajax({
+                method: "get",
+                dataType: 'json',
+                url: this.apiEndpoint + 'artists',
+                beforeSend: (xhr) => {
+                    this.setToken(xhr);
+                },
+            })
+                .then((response) => {
+                    resolve(response);
+                })
+                .fail((response) => {
+                    console.log('Api::getArtists failed.');
+                    this.checkUnauthorized(response);
+                    if (response.responseJSON) {
+                        reject(response.responseJSON);
+                    } else {
+                        reject({ 'message': 'Something is wrong on the server.' });
+                    }
+                });
+        });
+    
+        return p;
+    }
 
     getPlaylists(): Promise<any> {
         let p = new Promise<any>((resolve, reject) => {
